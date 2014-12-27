@@ -106,12 +106,14 @@ bool initialise(FlightBoard *fb, GPS *gps, IMU *imu, CAMERA_STREAM *cam) {
 	
 	
 	/* Initialise Camera */
+    /* 27/12/2014: Temporarily disabled so that the server will run for the time being. */
+    /*
 	if (cam->setup() != CAMERA_OK) {
 		cout << "\033[1;31m[COPTER]\033[0m Error setting up camera. Will retry continuously." << endl;
 		while (cam->setup() != CAMERA_OK) usleep(1000000);
 	}
 	cam->start();
-
+    */
 	return true;
 }
 
