@@ -7,6 +7,7 @@ picopter:
 	mkdir -p apps/bin
 	mkdir -p www-waypoints/obj
 	mkdir -p www-waypoints/bin
+	$(MAKE) -C third_party/Xsens
 	$(MAKE) -C base
 	$(MAKE) -C modules
 	$(MAKE) -C apps
