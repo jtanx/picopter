@@ -16,6 +16,7 @@ void terminate(int);
 int main (int argc, char* argcv[]) {
 	cout << "Starting program" << endl;
 
+#ifndef _WIN32
 	//Signal to exit program.
 	struct sigaction signalHandler;	
 	signalHandler.sa_handler = terminate;
@@ -24,6 +25,7 @@ int main (int argc, char* argcv[]) {
 	
 	sigaction(SIGTERM, &signalHandler, NULL);
 	sigaction(SIGINT,  &signalHandler, NULL);
+#endif
 	
 	//Start main program
 	GPS gps = GPS();

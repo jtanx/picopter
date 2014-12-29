@@ -38,6 +38,8 @@ void terminate(int);
 int main(int argc, char* argv[]) {
 	cout << "Starting program" << endl;
 	
+#ifndef _WIN32	
+	//Signal to exit program.
 	struct sigaction signalHandler;	
 	signalHandler.sa_handler = terminate;
 	sigemptyset(&signalHandler.sa_mask);
@@ -45,6 +47,7 @@ int main(int argc, char* argv[]) {
 	
 	sigaction(SIGTERM, &signalHandler, NULL);
 	sigaction(SIGINT,  &signalHandler, NULL);
+#endif
 	
 	
 	gpio::startWiringPi();

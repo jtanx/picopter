@@ -4,6 +4,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <boost/thread.hpp>
 #include <ncurses.h>
 #include <math.h> 
 

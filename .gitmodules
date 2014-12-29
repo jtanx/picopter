@@ -1,0 +1,3 @@
+[submodule "third_party/Xsens"]
+	path = third_party/Xsens
+	url = https://github.com/jtanx/Xsens

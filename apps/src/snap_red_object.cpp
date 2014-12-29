@@ -3,14 +3,18 @@
 #include <cmath>
 #include <ctime>
 #include <sstream>
+#include <boost/thread.hpp>
 #include <ncurses.h>
 #include <csignal>
+#include <gpio.h>
 
 using namespace std;
 
 #include "camera_var1.h"
 #include "flightBoard.h"
 #include <wiringPi.h>
+
+#define delay(a) usleep(a*1000)
 
 #define MIN_TIME_BETWEEN_PHOTOS 5	//5s
 #define MAX_NUMBER_OF_PHOTOS 50 //take a max of 50 photos
@@ -24,6 +28,7 @@ void terminate(int);
 int main(int argc, char* argv[]) {
 	cout << "Started program" << endl;
 	
+#ifndef _WIN32	
 	//Signal to exit program.
 	struct sigaction signalHandler;	
 	signalHandler.sa_handler = terminate;
@@ -32,6 +37,7 @@ int main(int argc, char* argv[]) {
 	
 	sigaction(SIGTERM, &signalHandler, NULL);
 	sigaction(SIGINT,  &signalHandler, NULL);
+#endif
 	
 	
 	//Just in case someone tries to run this while flying.

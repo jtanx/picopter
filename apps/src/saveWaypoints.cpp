@@ -2,6 +2,8 @@
 #include <iomanip>
 #include <cmath>
 #include <csignal>
+#include <gpio.h>
+#include <boost/thread.hpp>
 #include <ncurses.h>
 
 #include "gps_qstarz.h"		//Stores GPS data

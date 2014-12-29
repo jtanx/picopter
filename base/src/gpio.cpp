@@ -17,7 +17,11 @@
 #include <cstdio>	//sprintf
 #include <cstdlib>	//system
 
+#ifndef CROSS_EMULATION
 #include <wiringPi.h>
+#else
+#include "wiringPi_stub.h"
+#endif
 
 bool gpio::wiringPiRunning;
 bool gpio::servoBlasterRunning;

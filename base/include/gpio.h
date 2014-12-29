@@ -50,6 +50,12 @@
 #define GIMBAL_ANGLE_LOW 0
 #define GIMBAL_ANGLE_HIGH 90
 
+//This is a bit of hack, since it's not related to gpio, but whatever.
+#if !defined(usleep) && defined(_WIN32)
+#include <windows.h>
+#define usleep(x) Sleep(x/1000)
+#endif
+
 
 
 /**

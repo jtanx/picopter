@@ -4,9 +4,8 @@
 #include <cmath>
 #include <ctime>
 #include <csignal>
-#include <ncurses.h>
-
 #include <boost/thread.hpp>
+#include <ncurses.h>
 
 using namespace std;
 
@@ -43,7 +42,8 @@ void terminate(int);
 
 int main(int argc, char* argv[]) {
 	cout << "Starting program" << endl;
-	
+
+#ifndef _WIN32	
 	//Signal to exit program.
 	struct sigaction signalHandler;	
 	signalHandler.sa_handler = terminate;
@@ -52,6 +52,7 @@ int main(int argc, char* argv[]) {
 	
 	sigaction(SIGTERM, &signalHandler, NULL);
 	sigaction(SIGINT,  &signalHandler, NULL);
+#endif
 	
 	//Setup parameters
 	ConfigParser::ParamMap parameters;
