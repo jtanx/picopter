@@ -17,11 +17,8 @@
 #include <cstdio>	//sprintf
 #include <cstdlib>	//system
 
-#ifndef CROSS_EMULATION
 #include <wiringPi.h>
-#else
-#include "wiringPi_stub.h"
-#endif
+
 
 bool gpio::wiringPiRunning;
 bool gpio::servoBlasterRunning;
@@ -120,7 +117,7 @@ int gpio::setServoBlaster(int aileronSpeed, int elevatorSpeed, int rudderSpeed, 
 	return 0;
 }
 
-
+//-100 to 100
 int gpio::aileronSpeed2PWM(int speed) {
 	int pwm = AILERON_PWM_MID + ((speed-AILERON_SPEED_MID)*AILERON_PWM_SWING)/AILERON_SPEED_SWING;
 	if(pwm > AILERON_PWM_MID + AILERON_PWM_SWING) {
