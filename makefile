@@ -9,7 +9,7 @@ picopter:
 	mkdir -p www-waypoints/bin
 	$(MAKE) -C base
 	$(MAKE) -C modules
-	$(MAKE) -C apps
+#	$(MAKE) -C apps
 	$(MAKE) -C www-waypoints
 
 

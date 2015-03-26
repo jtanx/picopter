@@ -6,13 +6,15 @@
 #ifndef __RUN_LAWNMOWER_INCLUDED__
 #define __RUN_LAWNMOWER_INCLUDED__
 
+#include "buzzer.h"
+
 typedef struct{		//These are in degrees now.
 	double lat;
 	double lon;
 } Pos;
 
-void run_lawnmower(FlightBoard &, GPS &, IMU &, Pos, Pos);
+void run_lawnmower(FlightBoard &, GPS &, IMU &, Buzzer &, Pos, Pos);
 
-extern bool exitLawnmower;
+extern bool usingWindows;
 
 #endif

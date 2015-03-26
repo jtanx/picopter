@@ -17,11 +17,13 @@ class webInterfaceIf {
   virtual ~webInterfaceIf() {}
   virtual bool beginWaypointsThread() = 0;
   virtual bool beginLawnmowerThread() = 0;
+  virtual bool beginUserTrackingThread() = 0;
   virtual bool allStop() = 0;
   virtual void requestStatus(std::string& _return) = 0;
   virtual void requestCoords(coordDeg& _return) = 0;
   virtual double requestBearing() = 0;
   virtual void requestNextWaypoint(coordDeg& _return) = 0;
+  virtual bool updateUserPosition(const coordDeg& wpt) = 0;
   virtual bool updateWaypoints(const std::vector<coordDeg> & wpts) = 0;
   virtual bool resetWaypoints() = 0;
 };
@@ -61,6 +63,10 @@ class webInterfaceNull : virtual public webInterfaceIf {
     bool _return = false;
     return _return;
   }
+  bool beginUserTrackingThread() {
+    bool _return = false;
+    return _return;
+  }
   bool allStop() {
     bool _return = false;
     return _return;
@@ -77,6 +83,10 @@ class webInterfaceNull : virtual public webInterfaceIf {
   }
   void requestNextWaypoint(coordDeg& /* _return */) {
     return;
+  }
+  bool updateUserPosition(const coordDeg& /* wpt */) {
+    bool _return = false;
+    return _return;
   }
   bool updateWaypoints(const std::vector<coordDeg> & /* wpts */) {
     bool _return = false;
@@ -271,6 +281,100 @@ class webInterface_beginLawnmowerThread_presult {
   bool* success;
 
   _webInterface_beginLawnmowerThread_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+
+class webInterface_beginUserTrackingThread_args {
+ public:
+
+  webInterface_beginUserTrackingThread_args() {
+  }
+
+  virtual ~webInterface_beginUserTrackingThread_args() throw() {}
+
+
+  bool operator == (const webInterface_beginUserTrackingThread_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const webInterface_beginUserTrackingThread_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const webInterface_beginUserTrackingThread_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class webInterface_beginUserTrackingThread_pargs {
+ public:
+
+
+  virtual ~webInterface_beginUserTrackingThread_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _webInterface_beginUserTrackingThread_result__isset {
+  _webInterface_beginUserTrackingThread_result__isset() : success(false) {}
+  bool success;
+} _webInterface_beginUserTrackingThread_result__isset;
+
+class webInterface_beginUserTrackingThread_result {
+ public:
+
+  webInterface_beginUserTrackingThread_result() : success(0) {
+  }
+
+  virtual ~webInterface_beginUserTrackingThread_result() throw() {}
+
+  bool success;
+
+  _webInterface_beginUserTrackingThread_result__isset __isset;
+
+  void __set_success(const bool val) {
+    success = val;
+  }
+
+  bool operator == (const webInterface_beginUserTrackingThread_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const webInterface_beginUserTrackingThread_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const webInterface_beginUserTrackingThread_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _webInterface_beginUserTrackingThread_presult__isset {
+  _webInterface_beginUserTrackingThread_presult__isset() : success(false) {}
+  bool success;
+} _webInterface_beginUserTrackingThread_presult__isset;
+
+class webInterface_beginUserTrackingThread_presult {
+ public:
+
+
+  virtual ~webInterface_beginUserTrackingThread_presult() throw() {}
+
+  bool* success;
+
+  _webInterface_beginUserTrackingThread_presult__isset __isset;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
 
@@ -746,6 +850,114 @@ class webInterface_requestNextWaypoint_presult {
 
 };
 
+typedef struct _webInterface_updateUserPosition_args__isset {
+  _webInterface_updateUserPosition_args__isset() : wpt(false) {}
+  bool wpt;
+} _webInterface_updateUserPosition_args__isset;
+
+class webInterface_updateUserPosition_args {
+ public:
+
+  webInterface_updateUserPosition_args() {
+  }
+
+  virtual ~webInterface_updateUserPosition_args() throw() {}
+
+  coordDeg wpt;
+
+  _webInterface_updateUserPosition_args__isset __isset;
+
+  void __set_wpt(const coordDeg& val) {
+    wpt = val;
+  }
+
+  bool operator == (const webInterface_updateUserPosition_args & rhs) const
+  {
+    if (!(wpt == rhs.wpt))
+      return false;
+    return true;
+  }
+  bool operator != (const webInterface_updateUserPosition_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const webInterface_updateUserPosition_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class webInterface_updateUserPosition_pargs {
+ public:
+
+
+  virtual ~webInterface_updateUserPosition_pargs() throw() {}
+
+  const coordDeg* wpt;
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _webInterface_updateUserPosition_result__isset {
+  _webInterface_updateUserPosition_result__isset() : success(false) {}
+  bool success;
+} _webInterface_updateUserPosition_result__isset;
+
+class webInterface_updateUserPosition_result {
+ public:
+
+  webInterface_updateUserPosition_result() : success(0) {
+  }
+
+  virtual ~webInterface_updateUserPosition_result() throw() {}
+
+  bool success;
+
+  _webInterface_updateUserPosition_result__isset __isset;
+
+  void __set_success(const bool val) {
+    success = val;
+  }
+
+  bool operator == (const webInterface_updateUserPosition_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const webInterface_updateUserPosition_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const webInterface_updateUserPosition_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _webInterface_updateUserPosition_presult__isset {
+  _webInterface_updateUserPosition_presult__isset() : success(false) {}
+  bool success;
+} _webInterface_updateUserPosition_presult__isset;
+
+class webInterface_updateUserPosition_presult {
+ public:
+
+
+  virtual ~webInterface_updateUserPosition_presult() throw() {}
+
+  bool* success;
+
+  _webInterface_updateUserPosition_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
 typedef struct _webInterface_updateWaypoints_args__isset {
   _webInterface_updateWaypoints_args__isset() : wpts(false) {}
   bool wpts;
@@ -974,6 +1186,9 @@ class webInterfaceClient : virtual public webInterfaceIf {
   bool beginLawnmowerThread();
   void send_beginLawnmowerThread();
   bool recv_beginLawnmowerThread();
+  bool beginUserTrackingThread();
+  void send_beginUserTrackingThread();
+  bool recv_beginUserTrackingThread();
   bool allStop();
   void send_allStop();
   bool recv_allStop();
@@ -989,6 +1204,9 @@ class webInterfaceClient : virtual public webInterfaceIf {
   void requestNextWaypoint(coordDeg& _return);
   void send_requestNextWaypoint();
   void recv_requestNextWaypoint(coordDeg& _return);
+  bool updateUserPosition(const coordDeg& wpt);
+  void send_updateUserPosition(const coordDeg& wpt);
+  bool recv_updateUserPosition();
   bool updateWaypoints(const std::vector<coordDeg> & wpts);
   void send_updateWaypoints(const std::vector<coordDeg> & wpts);
   bool recv_updateWaypoints();
@@ -1012,11 +1230,13 @@ class webInterfaceProcessor : public ::apache::thrift::TDispatchProcessor {
   ProcessMap processMap_;
   void process_beginWaypointsThread(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_beginLawnmowerThread(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_beginUserTrackingThread(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_allStop(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_requestStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_requestCoords(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_requestBearing(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_requestNextWaypoint(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_updateUserPosition(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_updateWaypoints(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_resetWaypoints(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
  public:
@@ -1024,11 +1244,13 @@ class webInterfaceProcessor : public ::apache::thrift::TDispatchProcessor {
     iface_(iface) {
     processMap_["beginWaypointsThread"] = &webInterfaceProcessor::process_beginWaypointsThread;
     processMap_["beginLawnmowerThread"] = &webInterfaceProcessor::process_beginLawnmowerThread;
+    processMap_["beginUserTrackingThread"] = &webInterfaceProcessor::process_beginUserTrackingThread;
     processMap_["allStop"] = &webInterfaceProcessor::process_allStop;
     processMap_["requestStatus"] = &webInterfaceProcessor::process_requestStatus;
     processMap_["requestCoords"] = &webInterfaceProcessor::process_requestCoords;
     processMap_["requestBearing"] = &webInterfaceProcessor::process_requestBearing;
     processMap_["requestNextWaypoint"] = &webInterfaceProcessor::process_requestNextWaypoint;
+    processMap_["updateUserPosition"] = &webInterfaceProcessor::process_updateUserPosition;
     processMap_["updateWaypoints"] = &webInterfaceProcessor::process_updateWaypoints;
     processMap_["resetWaypoints"] = &webInterfaceProcessor::process_resetWaypoints;
   }
@@ -1077,6 +1299,15 @@ class webInterfaceMultiface : virtual public webInterfaceIf {
     return ifaces_[i]->beginLawnmowerThread();
   }
 
+  bool beginUserTrackingThread() {
+    size_t sz = ifaces_.size();
+    size_t i = 0;
+    for (; i < (sz - 1); ++i) {
+      ifaces_[i]->beginUserTrackingThread();
+    }
+    return ifaces_[i]->beginUserTrackingThread();
+  }
+
   bool allStop() {
     size_t sz = ifaces_.size();
     size_t i = 0;
@@ -1123,6 +1354,15 @@ class webInterfaceMultiface : virtual public webInterfaceIf {
     }
     ifaces_[i]->requestNextWaypoint(_return);
     return;
+  }
+
+  bool updateUserPosition(const coordDeg& wpt) {
+    size_t sz = ifaces_.size();
+    size_t i = 0;
+    for (; i < (sz - 1); ++i) {
+      ifaces_[i]->updateUserPosition(wpt);
+    }
+    return ifaces_[i]->updateUserPosition(wpt);
   }
 
   bool updateWaypoints(const std::vector<coordDeg> & wpts) {

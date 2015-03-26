@@ -32,6 +32,11 @@ class webInterfaceHandler : virtual public webInterfaceIf {
     printf("beginLawnmowerThread\n");
   }
 
+  bool beginUserTrackingThread() {
+    // Your implementation goes here
+    printf("beginUserTrackingThread\n");
+  }
+
   bool allStop() {
     // Your implementation goes here
     printf("allStop\n");
@@ -55,6 +60,11 @@ class webInterfaceHandler : virtual public webInterfaceIf {
   void requestNextWaypoint(coordDeg& _return) {
     // Your implementation goes here
     printf("requestNextWaypoint\n");
+  }
+
+  bool updateUserPosition(const coordDeg& wpt) {
+    // Your implementation goes here
+    printf("updateUserPosition\n");
   }
 
   bool updateWaypoints(const std::vector<coordDeg> & wpts) {

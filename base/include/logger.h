@@ -2,14 +2,10 @@
 #ifndef __LOGGER_H_INCLUDED__
 #define	__LOGGER_H_INCLUDED__
 
-#define LOG_DIRECTORY "/home/pi/picopter/logs"
+#define LOG_DIRECTORY "/home/pi/logs"
 
 #include <string>
-#include <iostream>
 #include <fstream>
-#include <ctime>
-#include <algorithm>
-#include <stdio.h>
 
 class Logger {
 public:

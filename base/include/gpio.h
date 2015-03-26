@@ -1,8 +1,8 @@
 /**
  * @file    gpio.h
  * @author	Michael Baxter	<20503664@student.uwa.edu.au>
- * @date	9-9-2014
- * @version	1.4
+ * @date	17-10-2014
+ * @version	1.6
  * 
  * Wrapper for the GPIO interfaces: wiringPi and servoblaser.
  * 
@@ -15,37 +15,38 @@
 #define __GPIO_H_INCLUDED__
 
 
-#define SERVOBLASTER_PATH "/home/pi/lib/PiBits/ServoBlaster/user/servod"
+#define SERVOBLASTER_PATH "/home/pi/lib/ServoBlaster-RPi2/servod"
 
 #define GPIO_OK 0
 
 #define MODE_PIN 5
+#define BUZZER_PIN 2
 
 #define AILERON_CHANNEL 0
 #define AILERON_PIN_PHYSICAL 11
-#define AILERON_PWM_MID 153			//Calibrated on August 1st
-#define AILERON_PWM_SWING 42
+#define AILERON_PWM_MID 152			//Calibrated on October 17th
+#define AILERON_PWM_SWING 41
 #define AILERON_SPEED_MID 0
 #define AILERON_SPEED_SWING 100
 
 #define ELEVATOR_CHANNEL 1
 #define ELEVATOR_PIN_PHYSICAL 12
-#define ELEVATOR_PWM_MID 156		//Calibrated on August 1st	
-#define ELEVATOR_PWM_SWING 40
+#define ELEVATOR_PWM_MID 153		//Calibrated on October 17th	
+#define ELEVATOR_PWM_SWING 42
 #define ELEVATOR_SPEED_MID 0
 #define ELEVATOR_SPEED_SWING 100
 
 #define RUDDER_CHANNEL 2
 #define RUDDER_PIN_PHYSICAL 15
-#define RUDDER_PWM_MID 153			//Calibrated on August 1st
+#define RUDDER_PWM_MID 152			//Calibrated on October 17th
 #define RUDDER_PWM_SWING 42
 #define RUDDER_SPEED_MID 0
 #define RUDDER_SPEED_SWING 100
 
 #define GIMBAL_CHANNEL 3
 #define GIMBAL_PIN_PHYSICAL 16
-#define GIMBAL_PWM_LOW 110
-#define GIMBAL_PWM_HIGH 190
+#define GIMBAL_PWM_LOW 95			//Calibrated on October 5th
+#define GIMBAL_PWM_HIGH 210
 #define GIMBAL_ANGLE_LOW 0
 #define GIMBAL_ANGLE_HIGH 90
 
@@ -80,12 +81,22 @@ namespace gpio {
      *
 	 * Checks whether copter is in auto mode or not.
 	 * 
-	 * This function requires the wiringPi daemon to be running berfore use.  Be sure to run startWiringPi() before use.
+	 * This function requires the wiringPi daemon to be running berfore use.  Be sure to run startWiringPi() before use.  Or use the wrapper.
 	 * 
 	 * @return	strue if the copter is in autonomous mode, false otherwise;
 	 **/
 	bool isAutoMode(void);
 		
+	/**
+     * @fn void setBuzzer(bool buzzerOn)
+     *
+	 * Turns the buzzer on or off.
+	 * 
+	 * This function requires the wiringPi daemon to be running berfore use.  Be sure to run startWiringPi() before use.  Or use the wrapper.
+	 * 
+	 * @param	buzzerOn	boolean to turn the buzzer on or off. (true = on or false = off).
+	 **/
+	void setBuzzer(bool);
 	
 	/**
      *@fn int startServoBlaster

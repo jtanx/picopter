@@ -4,10 +4,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include  <ncurses.h>
+#include <ncurses.h>
+#include <math.h> 
 
-#include <gpio.h>
-#include <flightBoard.h>
 #include <gps_qstarz.h>
 #include "logger.h"
 #include "lawnmower_control.h"	//Really only need distance function
@@ -20,15 +19,10 @@ int TITLE_HEIGHT = 4;
 void endCurses(void);
 void startCurses(void);
 
+bool exitProgram = false;
+
 int main() {
 
-	gpio::startWiringPi();			//Initailises wiringPi
-	FlightBoard fb = FlightBoard();	//Initialises flightboard
-	if(fb.setup() != FB_OK) {
-		cout << "Error setting up flight board. Terminating program." << endl;
-		return -1;
-	}
-	fb.start();
 	GPS gps = GPS();		//Initialises GPS
 	if(gps.setup() != GPS_OK) {
 		cout << "Error setting up gps (check that it has been switched on). Terminating program." << endl;
@@ -37,14 +31,20 @@ int main() {
 	gps.start();
 
 	Logger distLog = Logger("Distance.txt");
+	distLog.clearLog();
 	GPS_Data data;
-	Pos start, end;
-	double distance;
-	char str[BUFSIZ];
-
-	(&gps)->getGPS_Data(&data);
-	start.lat = (data.latitude);
-	start.lon = (data.longitude);
+	Pos start, current, currentLat, currentLon;
+	bool started = false;
+	while(!started) {
+		usleep(500000);
+		(&gps)->getGPS_Data(&data);
+		start.lat = (data.latitude);
+		start.lon = (data.longitude);
+		cout << start.lat << " " << start.lon << endl;
+		if ((abs((int)(start.lat) - (-31)) < 1) && (abs((int)(start.lon) - (115)) < 1)) {
+			started = true;
+		}
+	}
 	double startTime = data.time;
 
 	initscr();	//Set up curses
@@ -65,44 +65,49 @@ int main() {
 	
 	WINDOW *msg_window = newwin(LINES - TITLE_HEIGHT -1, COLUMNS -1, TITLE_HEIGHT, 0);
 	wattron(msg_window, COLOR_PAIR(2));
-
+	
+	double dist, latDisp, lonDisp, lastUpdate;
+	char str[BUFSIZ];
+	currentLat.lon = start.lon;	//Will always be fixed
+	currentLon.lat = start.lat;
+	lastUpdate = data.time;
 	while(true) {
 		(&gps)->getGPS_Data(&data);
-		end.lat = (data.latitude);
-		end.lon = (data.longitude);
+		if ((data.time) == lastUpdate) {
+			usleep(100000);
+			continue;
+		}
+		current.lat = data.latitude;
+		currentLat.lat = data.latitude;
+		current.lon = data.longitude;
+		currentLon.lon = data.longitude;
+		lastUpdate = data.time;
 
-		distance = calculate_distance(start, end);
-		sprintf(str, "%f %f", (data.time)-startTime, distance);
+		dist = calculate_distance(start, current);
+		latDisp = calculate_distance(start, currentLat);
+		if (start.lat > currentLat.lat) {	//Are we S of where we started?
+			latDisp = -latDisp;
+		}
+		lonDisp = calculate_distance(start, currentLon);
+		if (start.lon > currentLon.lon) {	//Are we S of where we started?
+			lonDisp = -lonDisp;
+		}
+		sprintf(str, "%f %f %f %f %d", (data.time)-startTime, latDisp, lonDisp, dist, data.numSatelites);
 		distLog.writeLogLine(str, false);
 
 		wclear(msg_window);
 		wprintw(msg_window, "\n");
-		wprintw(msg_window, "Distance:\t%d\n", distance);
-		wprintw(msg_window, "Time:\t\t%f\n", (data.time)-startTime);
+		wprintw(msg_window, "Started at \t%f\t%f\n", start.lat, start.lon);
+		wprintw(msg_window, "Currently at \t%f\t%f\n", currentLat.lat, currentLon.lon);
+		wprintw(msg_window, "\n");
+		wprintw(msg_window, "Distance:\t\t\t%f m\n", dist);
+		wprintw(msg_window, "Latitude Displacement:\t\t%f m\n", latDisp);
+		wprintw(msg_window, "Longitude Displacement:\t\t%f m\n", lonDisp);
+		wprintw(msg_window, "Time Difference:\t\t%f seconds\n", (data.time)-startTime);
+		wprintw(msg_window, "Number of Satellites:\t\t%d satellites\n", data.numSatelites);
 		wprintw(msg_window, "\n");
 		wrefresh(msg_window);
 		usleep(100000);
 	}
 	return 0;
-}
-
-void endCurses(void) {
-	if (curses_started && !isendwin())
-	endwin();
-}
-
-
-void startCurses(void) {
-	if (curses_started) {
-		refresh();
-	}
-	else {
-		initscr();
-		cbreak();
-		noecho();
-		intrflush(stdscr, false);
-		keypad(stdscr, true);
-		atexit(endCurses);
-		curses_started = true;
-	}
 }

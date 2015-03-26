@@ -16,16 +16,17 @@
 #include "camera.h"
 #include "logger.h"
 #include "config_parser.h"
-#include "detectObjects.h"
+//#include "detectObjects.h"
 
 #include "lawnmower_structures.h"
+#include "state.h"
 
 using namespace std;
 using namespace cv;
 
 void terminateLawn(int signum) {
 	cout << "Signal " << signum << " received. Quitting lawnmower program." << endl;
-	exitLawnmower = true;
+	exitProgram = true;
 }
 
 void updatePicture(Mat oval, double latitude, double longitude, int type) {
@@ -98,6 +99,25 @@ double calculate_bearing(Pos pos1, Pos pos2) {
 	return bearing*(180/PI);	//In degrees
 }
 
+void addMidPoints(Pos start, Pos end, vector<Pos> *list) {
+	int direction = 1;
+	if (end.lat < start.lat) {
+		direction = -1;	//Are we going S->N instead of N->S?
+	}
+	double endDistance = calculate_distance(start, end);	//Great circle distance, but ~ straight line distance for close points
+	//cout << "POINT_SPACING " << POINT_SPACING << endl;
+	int points = (endDistance/POINT_SPACING);
+	double fraction, distance, angle;
+	for (int i = 1; i < points; i++) {
+		fraction = (double)i/points;
+		distance = fraction*endDistance;
+		angle = distance/(RADIUS_OF_EARTH)*(180/PI);	//Both points have the same longitude
+		Pos position;
+		position.lat = start.lat + (double)direction*angle;
+		position.lon = start.lon;
+		list->push_back(position);
+	}
+}
 
 void populateVector(Pos start, Pos end, vector<Pos> *list) {
 	int direction = 1;
@@ -119,7 +139,6 @@ void populateVector(Pos start, Pos end, vector<Pos> *list) {
 	}
 	list->push_back(end);
 }
-
 
 void populateMainVector(vector<Pos> *list, Logger *logPtr, Pos start, Pos end) {
 	char str[BUFSIZ];
@@ -145,31 +164,38 @@ void populateMainVector(vector<Pos> *list, Logger *logPtr, Pos start, Pos end) {
 
 	vector<Pos> sideA;
 	vector<Pos> sideB;
+	sweepEnds.clear();	//Clear list Alex needs for points
 	populateVector(corners[0], corners[1], &sideA);
-	for(int i = 0; i < (int)sideA.size(); i++) {
+	populateVector(corners[2], corners[3], &sideB);
+	/*for(int i = 0; i < (int)sideA.size(); i++) {
 		sprintf(str, "Point %d of sideA is %f %f", i+1, (sideA[i].lat), (sideA[i].lon));
 		logPtr->writeLogLine(str);
 	}
-	populateVector(corners[2], corners[3], &sideB);
 	for(int i = 0; i < (int)sideB.size(); i++) {
 		sprintf(str, "Point %d of sideB is %f %f", i+1, (sideB[i].lat), (sideB[i].lon));
 		logPtr->writeLogLine(str);
-	}
+	}*/
 	int minVectorLength = sideA.size();
-	if ((int)sideB.size() < minVectorLength) minVectorLength = sideB.size(); //Checks which is smallest
+	if ((int)sideB.size() < minVectorLength) minVectorLength = sideB.size(); //Checks which is smallest, but should be same
 	
 	for (int i = 0; i < minVectorLength; i++) {
 		if (i%2 == 0) {	//Even?
 			//sprintf(str, "%d %d- Even", i,minVectorLength);
 			//lawnlog.writeLogLine(str);
 			list->push_back(sideA[i]);
+			sweepEnds.push_back(sideA[i]);
+			addMidPoints(sideA[i], sideB[i], list);
 			list->push_back(sideB[i]);
+			sweepEnds.push_back(sideB[i]);
 		}
 		else if (i%2 == 1) {//Odd?
 			//sprintf(str, "%d %d - Odd", i, minVectorLength);
 			//lawnlog.writeLogLine(str);
 			list->push_back(sideB[i]);
+			sweepEnds.push_back(sideB[i]);
+			addMidPoints(sideB[i], sideA[i], list);
 			list->push_back(sideA[i]);
+			sweepEnds.push_back(sideB[i]);
 		}
 	}
 
@@ -199,7 +225,7 @@ double determineBearing(FlightBoard *fbPtr, GPS *gpsPtr, GPS_Data *dataPtr) {
 	return yaw;
 }
 
-void flyTo(FlightBoard *fbPtr, GPS *gpsPtr, GPS_Data *dataPtr, IMU *imuPtr, IMU_Data *compDataPtr, Pos end, double yaw, Logger *logPtr, Logger *rawLogPtr, RaspiCamCvCapture *camPtr, int index, Mat oval) {
+void flyTo(FlightBoard *fbPtr, GPS *gpsPtr, GPS_Data *dataPtr, IMU *imuPtr, IMU_Data *compDataPtr, Pos end, double yaw, Logger *logPtr, Logger *rawLogPtr,/* RaspiCamCvCapture *camPtr,*/ int index, Mat oval) {
 	FB_Data stop = {0, 0, 0, 0};
 	FB_Data course = {0, 0, 0, 0};
 	Pos start;
@@ -208,7 +234,7 @@ void flyTo(FlightBoard *fbPtr, GPS *gpsPtr, GPS_Data *dataPtr, IMU *imuPtr, IMU_
 		imuPtr->getIMU_Data(compDataPtr);
 		yaw = compDataPtr->yaw;
 	}
-	imshow("Oval Map", oval);	//Constantly updates picture
+	if (usingWindows) imshow("Oval Map", oval);	//Constantly updates picture
 	waitKey(1);
 	start.lat = (dataPtr->latitude);
 	start.lon = (dataPtr->longitude);
@@ -224,8 +250,9 @@ void flyTo(FlightBoard *fbPtr, GPS *gpsPtr, GPS_Data *dataPtr, IMU *imuPtr, IMU_
 	for (int i = 0; i < PAST_POINTS; i++) {
 		pastDistances[i] = 0;
 	}
+	cout << "Past points set..." << endl;
 	
-	Mat bestImg, currentImg, imHSV, imBin, BGRTemp, image;
+	/*Mat bestImg, currentImg, imHSV, imBin, BGRTemp, image;
 	IplImage* view;
 	int nObjects = 0;
 	int centres[OBJECT_LIMIT][2];
@@ -237,15 +264,18 @@ void flyTo(FlightBoard *fbPtr, GPS *gpsPtr, GPS_Data *dataPtr, IMU *imuPtr, IMU_
 		photoTaken[i] = false;
 	}
 	int loopCount = 0;
-	int frame;
+	int frame;*/
 
-	while (!exitLawnmower && distance > WAYPOINT_RADIUS) {
+	cout << "Starting flight loop..." << endl;
+
+	while (!exitProgram && distance > WAYPOINT_RADIUS) {
 		setLawnCourse(&course, distance, pastDistances, bearing, yaw);
+		cout << "Course set" << endl;
 		sprintf(str, "Course set to : {%d (A), %d (E)}", course.aileron, course.elevator);
 		logPtr->writeLogLine(str);
 		fbPtr->setFB_Data(&course);
 		
-		view = raspiCamCvQueryFrame(camPtr);
+		/*view = raspiCamCvQueryFrame(camPtr);
 		BGRTemp = cvarrToMat(view);
 		resize(BGRTemp, image, Size(COLSIZE, ROWSIZE), 0, 0, INTER_LINEAR);
 		cvtColor(image, imHSV, CV_BGR2HSV);
@@ -271,10 +301,12 @@ void flyTo(FlightBoard *fbPtr, GPS *gpsPtr, GPS_Data *dataPtr, IMU *imuPtr, IMU_
 				centres[frame][1] = -1;
 			}
 		}
-		namedWindow("RaspiCamTest");
-		imshow("RaspiCamTest", image);
-		namedWindow("Connected Components");
-		imshow("Connected Components", imBin);
+		if (usingWindows) {
+			namedWindow("RaspiCamTest");
+			imshow("RaspiCamTest", image);
+			namedWindow("Connected Components");
+			imshow("Connected Components", imBin);
+		}*/
 		
 		usleep(LOOP_WAIT);	//Wait for instructions
 		gpsPtr->getGPS_Data(dataPtr);
@@ -286,9 +318,11 @@ void flyTo(FlightBoard *fbPtr, GPS *gpsPtr, GPS_Data *dataPtr, IMU *imuPtr, IMU_
 			logPtr->writeLogLine(str);
 		}
 		updatePicture(oval, dataPtr->latitude, dataPtr->longitude, 0);	
-		namedWindow("Oval Map", CV_WINDOW_AUTOSIZE);
-		imshow("Oval Map", oval);
-		waitKey(1); 
+		if (usingWindows) {
+			namedWindow("Oval Map", CV_WINDOW_AUTOSIZE);
+			imshow("Oval Map", oval);
+			waitKey(1);
+		}
 		start.lat = (dataPtr->latitude);
 		start.lon = (dataPtr->longitude);
 		cout << "Needs to move from: " << dataPtr->latitude << " " << dataPtr->longitude << "\n\tto : " <<end.lat << " " << end.lon << endl;
@@ -313,9 +347,9 @@ void flyTo(FlightBoard *fbPtr, GPS *gpsPtr, GPS_Data *dataPtr, IMU *imuPtr, IMU_
 			return;
 		}
 	}
-	cout << "Arrived" << endl;
-	sprintf(str, "Arrived at %f %f\n----------------------------------\n", end.lat, end.lon);
 	logPtr->writeLogLine(str);
 	fbPtr->setFB_Data(&stop);
 	usleep(LOCATION_WAIT);
+	cout << "Stopped flying to " << end.lat << " " << end.lon << endl;
+	sprintf(str, "Stopped flying to %f %f\n----------------------------------\n", end.lat, end.lon);
 }

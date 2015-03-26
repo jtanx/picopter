@@ -1,3 +1,9 @@
+//v1.5	4-10-2014	BAX
+//Shuffled things around so that Camera is the plain version and the variations have inbuilt imae processing algorithms.
+
+//v1.4	3-10-2014	BAX
+//Now with added mutex
+
 //v1.3	10-9-2014	BAX
 //Documented code and added new config parsing
 
@@ -11,6 +17,17 @@
 
 #include "camera.h"
 
+#include <iostream>
+#include <sstream>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "RaspiCamCV.h"
+#include <time.h>
+#include <utility>
+#include <stdio.h>
+
+#include "config_parser.h"
+
 /*----------------------------------
 	CAMERA class functions here	
 ----------------------------------*/
@@ -21,26 +38,17 @@ CAMERA::CAMERA() {
 	
 	//These are default values for detecting red objects.
 	//These will be overwritten soon.
-	this->MIN_HUE		= 320;
-	this->MAX_HUE		= 40;
-	this->MIN_SAT		= 127;
-	this->MAX_SAT		= 255;
-	this->MIN_VAL		= 95;
-	this->MAX_VAL		= 255;
-	this->PIXLE_THRESHOLD	= 60;
-    this->PIXLE_SKIP        = 4;
     
     this->THREAD_SLEEP_TIME = 0;
-	
-	this->redObjectDetected = false;
-	this->redObject.x = -1;
-	this->redObject.y = -1;
-	
 	
 	this->frame_counter = -1;
 	
 	this->takePhotoThisCycle = false;
 	this->imageFileName = "image.jpg";
+	
+	this->displayOn = true;
+	
+	this->image = cv::Mat();
 }
 
 CAMERA::CAMERA(const CAMERA& orig) {}
@@ -52,15 +60,7 @@ int CAMERA::setup() {
 	if(running) return -1;
 	
 	//log = new Logger("camera.log");
-	try {
-		CAMERA_COMMON::build_lookup_reduce_colourspace(lookup_reduce_colourspace);
-		CAMERA_COMMON::build_lookup_threshold(lookup_threshold, MIN_HUE, MAX_HUE, MIN_SAT, MAX_SAT, MIN_VAL, MAX_VAL);
-		//log->writeLogLine("Lookup tables built.");
-	} catch(...) {
-		//log->writeLogLine("Error building lookup tables.");
-		return -1;
-	}
-	
+
 	capture = raspiCamCvCreateCameraCapture(0);
 	
 	ready = true;
@@ -70,16 +70,7 @@ int CAMERA::setup() {
 
 int CAMERA::setup(std::string fileName) {
     ConfigParser::ParamMap parameters;
-    
-    parameters.insert("MIN_HUE", &MIN_HUE);
-    parameters.insert("MAX_HUE", &MAX_HUE);
-    parameters.insert("MIN_SAT", &MIN_SAT);
-    parameters.insert("MAX_SAT", &MAX_SAT);
-    parameters.insert("MIN_VAL", &MIN_VAL);
-    parameters.insert("MAX_VAL", &MAX_VAL);
-    
-    parameters.insert("PIXLE_THRESHOLD", &PIXLE_THRESHOLD);
-    parameters.insert("PIXLE_SKIP", &PIXLE_SKIP);
+
     parameters.insert("THREAD_SLEEP_TIME", &THREAD_SLEEP_TIME);
     
     ConfigParser::loadParameters("CAMERA", &parameters, fileName);
@@ -102,6 +93,7 @@ int CAMERA::stop() {
 	if(!running) return -1;
 	
 	running = false;
+	boost::mutex::scoped_lock lock(process_mutex);
 	//log->writeLogLine("Camera stopped.");
 	return 0;
 }
@@ -110,130 +102,67 @@ int CAMERA::close() {
     if(running) stop();
 	if(running) return -1;
 	if(!ready) return -1;
-	
-	waitKey(200);
+
 	raspiCamCvReleaseCapture(&capture);
 	ready = false;
 	//log->writeLogLine("Connection to Camera closed");
+	
 	return 0;
 }
 
 
 //this thread does all the work
-void CAMERA::processImages() {
+void CAMERA::processImages() {	
 	time(&start_time);
 	frame_counter = 0;
 	while(running) {
+		process_mutex.lock();
 		
 		IplImage* image_raspi = raspiCamCvQueryFrame(capture);	//MAYBE DO THIS BETTER
-		Mat image(image_raspi);
-		
-		if(getRedObjectCentre(image, lookup_reduce_colourspace, lookup_threshold, &redObjectDetected, &redObject)) {
-			drawObjectMarker(image, Point(redObject.x+image.cols/2, -redObject.y+image.rows/2));
+		image = cv::Mat(image_raspi);
+
+		if(displayOn) {
+			cv::imshow("Image", image);
 		}
-		
-		drawCrosshair(image);
-        imshow("Image", image);
         
 		if(takePhotoThisCycle) {
 			//imwrite(std::string("photos/") + imageFileName, image);
-			imwrite(imageFileName, image);
+			cv::imwrite(imageFileName, image);
 			takePhotoThisCycle = false;
 		}
+		
 		frame_counter++;
-		waitKey(1);
+		
+		if(displayOn) {
+			cv::waitKey(1);
+		}
+		
+		process_mutex.unlock();
         if(THREAD_SLEEP_TIME > 0) {
             boost::this_thread::sleep(boost::posix_time::milliseconds(THREAD_SLEEP_TIME));
         }
 	}
 }
 
-bool CAMERA::objectDetected() {
-	return redObjectDetected;
-}
 
-int CAMERA::getObjectLocation(ObjectLocation *data) {
-	data->x = redObject.x;
-	data->y = redObject.y;
-    
-    if(!redObjectDetected) {
-        return -1;
-    } else {
-        return 0;	//If you hate me, I know why.
-    }
-}
 
 double CAMERA::getFramerate() {
+	boost::mutex::scoped_lock lock(process_mutex);
 	time(&end_time);
 	return frame_counter/difftime(end_time, start_time);
 }
 
 void CAMERA::takePhoto(std::string fileName) {
+	boost::mutex::scoped_lock lock(process_mutex);
 	if(!fileName.empty()) imageFileName = fileName;
 	takePhotoThisCycle = true;
 }
 
-
-bool CAMERA::getRedObjectCentre(Mat& Isrc, const uchar table_reduce_colorspace[],  const uchar table_threshold[][LOOKUP_SIZE][LOOKUP_SIZE], bool *redObjectDetected, ObjectLocation *redObject) {
-	int nRows = Isrc.rows;
-	int nCols = Isrc.cols;
-	int nChannels = Isrc.channels();
-	
-	int M00 = 0;		//Mxy
-	int M01 = 0;
-	int M10 = 0;
-
-	int i, j, k;		//k = 3*i
-	uchar* p;
-	for(j=0; j<nRows; j += PIXLE_SKIP) {
-		p = Isrc.ptr<uchar>(j);
-		for (i=0; i<nCols; i += PIXLE_SKIP) {
-			k = i*nChannels;
-			if(table_threshold[table_reduce_colorspace[p[k+2]]][table_reduce_colorspace[p[k+1]]][table_reduce_colorspace[p[k]]]) {
-				M00 += 1;
-				M01 += j;
-				M10 += i;
-			}
-		}
-	}
-	//cout << "red points:" << pixle_counter;
-	if(M00 > PIXLE_THRESHOLD) {
-		*redObjectDetected = true;
-		redObject->x = M10/M00 - nCols/2;
-		redObject->y = -(M01/M00 - nRows/2);
-		return true;
-	} else {
-		*redObjectDetected = false;
-		return false;
-	}
+void CAMERA::getCVMat(cv::Mat dest) {
+	boost::mutex::scoped_lock lock(process_mutex);
+	this->image.copyTo(dest);
 }
 
-void CAMERA::drawObjectMarker(Mat img, Point centre) {
-	int thickness = 3;
-	int lineType = 8;
-	Point cross_points[4];
-	cross_points[0] = Point(centre.x,	0);
-	cross_points[1] = Point(centre.x,	img.rows);
-	cross_points[2] = Point(0,			centre.y);
-	cross_points[3] = Point(img.cols,	centre.y);
-	for(int i=0; i<4; i+=2) {
-		line(img, cross_points[i], cross_points[i+1], Scalar(0, 0, 0), thickness, lineType);
-	}
-}
-
-void CAMERA::drawCrosshair(Mat img) {
-	int thickness = 3;
-	int lineType = 8;
-	int size = 20;
-	Point cross_points[4];
-	cross_points[0] = Point(img.cols/2 - size,	img.rows/2);
-	cross_points[1] = Point(img.cols/2 + size,	img.rows/2);
-	cross_points[2] = Point(img.cols/2,	img.rows/2 - size);
-	cross_points[3] = Point(img.cols/2,	img.rows/2 + size);
-	for(int i=0; i<4; i+=2) {
-		line(img, cross_points[i], cross_points[i+1], Scalar(255, 255, 255), thickness, lineType);
-	}
-}
 
 /*----------------------------------
 	CAMERA_COMMON functions here	
@@ -304,4 +233,48 @@ void CAMERA_COMMON::build_lookup_reduce_colourspace(uchar lookup_reduce_coloursp
 
 int CAMERA_COMMON::unreduce(int x) {
 	return (x*(CHAR_SIZE-1) + (CHAR_SIZE-1)/2) / LOOKUP_SIZE;		//crap! i need to put this factor back.
+}
+
+
+
+
+
+void CAMERA_COMMON::drawCrosshair(cv::Mat img) {
+	int thickness = 2;
+	int lineType = 8;
+	int size = 20;
+	cv::Point cross_points[4];
+	cross_points[0] = cv::Point(img.cols/2 - size,	img.rows/2);
+	cross_points[1] = cv::Point(img.cols/2 + size,	img.rows/2);
+	cross_points[2] = cv::Point(img.cols/2,	img.rows/2 - size);
+	cross_points[3] = cv::Point(img.cols/2,	img.rows/2 + size);
+	for(int i=0; i<4; i+=2) {
+		cv::line(img, cross_points[i], cross_points[i+1], cv::Scalar(255, 255, 255), thickness, lineType);
+	}
+}
+
+void CAMERA_COMMON::drawObjectMarker(cv::Mat img, cv::Point centre, cv::Scalar colour) {
+	int thickness = 2;
+	int lineType = 8;
+	cv::Point cross_points[4];
+	cross_points[0] = cv::Point(centre.x,	0);
+	cross_points[1] = cv::Point(centre.x,	img.rows);
+	cross_points[2] = cv::Point(0,			centre.y);
+	cross_points[3] = cv::Point(img.cols,	centre.y);
+	for(int i=0; i<4; i+=2) {
+		cv::line(img, cross_points[i], cross_points[i+1], colour, thickness, lineType);
+	}
+}
+
+void CAMERA_COMMON::drawBox(cv::Mat img, cv::Point topLeft, cv::Point bottomRight, cv::Scalar colour) {
+	int thickness = 2;
+	int lineType = 8;
+	cv::Point box_points[4];
+	box_points[0] = cv::Point(topLeft.x,		topLeft.y);
+	box_points[1] = cv::Point(topLeft.x,		bottomRight.y);
+	box_points[2] = cv::Point(bottomRight.x,	bottomRight.y);
+	box_points[3] = cv::Point(bottomRight.x,	topLeft.y);
+	for(int i=0; i<4; i++) {
+		cv::line(img, box_points[i], box_points[(i+1)%4], colour, thickness, lineType);
+	}
 }

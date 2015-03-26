@@ -24,8 +24,9 @@ typedef struct{		//These are in degrees now.
 	double lon;
 } Pos;
 
-extern bool exitLawnmower;
 extern bool usingIMU;
+extern bool usingWindows;
+extern std::vector<Pos> sweepEnds;
 
 extern int SPEED_LIMIT;		//Config file parameters - need to be initialised as globals
 extern double SWEEP_SPACING;
@@ -35,8 +36,11 @@ extern double KPxy;
 extern double KIxy;
 extern double KPz;
 extern double KIz;
+extern double DURATION;
+extern double FREQUENCY;
+extern int VOLUME;
 
-extern int HMIN;
+/*extern int HMIN;
 extern int HMAX;
 extern int SMIN;
 extern int SMAX;
@@ -48,6 +52,6 @@ extern int COLSIZE;
 extern int ROWSIZE; 
 extern int PIXELTHRESH;
 extern int DILATE_ELEMENT;
-extern int ERODE_ELEMENT;
+extern int ERODE_ELEMENT;*/
 
 #endif

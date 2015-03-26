@@ -1,3 +1,6 @@
+//v1.4	5-10-2014	BAX
+//Added buzzer.
+
 //v1.4	9-9-2014	BAX
 //Fixed the gimbal angle ->  pwm scaling equation
 //Documented code.
@@ -8,12 +11,13 @@
 //v1.2	1-8-2014	OMID
 //PWMs calibrated.
 
+
+#include "gpio.h"
+
 #include <cstdio>	//sprintf
 #include <cstdlib>	//system
 
 #include <wiringPi.h>
-
-#include "gpio.h"
 
 bool gpio::wiringPiRunning;
 bool gpio::servoBlasterRunning;
@@ -23,6 +27,7 @@ int gpio::startWiringPi() {
 	if(!gpio::wiringPiRunning) {
 		wiringPiSetup();
 		pinMode(MODE_PIN, INPUT);
+		pinMode(BUZZER_PIN, OUTPUT);
 		gpio::wiringPiRunning = true;
 		return 0;
 	} else {
@@ -49,6 +54,14 @@ bool gpio::isAutoMode() {
 	}
 }
 
+void gpio::setBuzzer(bool buzzerOn) {
+	if(buzzerOn) {
+		digitalWrite(BUZZER_PIN, HIGH);
+	} else {
+		digitalWrite(BUZZER_PIN, LOW);
+	}
+}
+
 
 
 
@@ -56,14 +69,15 @@ bool gpio::isAutoMode() {
 //servoBlaster wrappers here
 int gpio::startServoBlaster() {
 	if(!gpio::servoBlasterRunning) {
-		
+		system("service servoblaster start");
+        /*
 		char servoBlasterInit[128];
 		sprintf(servoBlasterInit, "%s --p1pins=%d,%d,%d,%d --cycle-time=14800us",   SERVOBLASTER_PATH, 
 																	AILERON_PIN_PHYSICAL, 	//ch0
 																	ELEVATOR_PIN_PHYSICAL, 	//ch1
 																	RUDDER_PIN_PHYSICAL, 	//ch2
 																	GIMBAL_PIN_PHYSICAL);	//ch3
-		system(servoBlasterInit);
+		system(servoBlasterInit);*/
 		gpio::servoBlasterRunning = true;
 		gpio::setServoBlaster(0, 0, 0, 0);
 		return 0;
@@ -74,7 +88,7 @@ int gpio::startServoBlaster() {
 
 int gpio::stopServoBlaster() {
 	if(gpio::servoBlasterRunning) {
-		system("killall servod");
+		system("service servoblaster stop");
 		gpio::servoBlasterRunning = false;
 		return 0;
 	} else {

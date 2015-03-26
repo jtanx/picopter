@@ -1,3 +1,6 @@
+//v1.7	3-10-2014	BAX
+//Mutexed all the things.
+
 //v1.6  10-9-2014   BAX
 //Added error checking capabilities and sleep capablilties
 
@@ -7,17 +10,19 @@
 //v1.4	26-8-2014	BAX
 //BIG CHANGE: no more nmea.  Straight into degrees.  Less confusion for all.
 
-#include <string>
+
+#include "gps_qstarz.h"
+
 #include <sstream>
 #include <iostream>
 #include <ctime>
 
 #include "gpio.h"
 #include <wiringSerial.h>
-
+//#include <boost/thread.hpp>
+#include <boost/lexical_cast.hpp>
+//#include "logger.h"
 #include "config_parser.h"
-
-#include "gps_qstarz.h"
 
 GPS::GPS() {
 	this->ready = false;
@@ -32,7 +37,7 @@ GPS::GPS() {
 	
 	this->fileDes = -1;
     
-    this->THREAD_SLEEP_TIME = 0;   //miliseconds
+    this->THREAD_SLEEP_TIME = 180;   //miliseconds
     this->TIMEOUT = 3;  //seconds
     
     this->noDataError = false;
@@ -85,6 +90,7 @@ int GPS::stop() {
 	if(!running) return -1;
 	
 	running = false;
+	boost::mutex::scoped_lock lock(uploader_mutex);
 	log->writeLogLine("GPS stopped.");
 	return 0;
 }
@@ -108,11 +114,13 @@ void GPS::uploadData() {
 	std::string gpsString;
 	int problems;
 	while(running) {
+		uploader_mutex.lock();
 		gpsString = getGPSString(fileDes);
 		//std::cout << "gpsString: " << gpsString << std::endl;
 		log->writeLogLine(gpsString);
 		if(checkGPSString(&gpsString)) {
 			log->writeLogLine("Got gps string, but not the one I want");
+			uploader_mutex.unlock();
 			continue;
 		}
 		problems = processGPSString(&currentData, &gpsString);
@@ -127,6 +135,7 @@ void GPS::uploadData() {
 			log->writeLogLine("Read string, no dataz :(");
             noDataError = true;
 		}
+		uploader_mutex.unlock();
         if(THREAD_SLEEP_TIME > 0) {
             boost::this_thread::sleep(boost::posix_time::milliseconds(THREAD_SLEEP_TIME));
         }
@@ -137,6 +146,7 @@ void GPS::uploadData() {
 //get things
 int GPS::getGPS_Data(GPS_Data *data) {
 	if(!running) return -1;
+	boost::mutex::scoped_lock lock(uploader_mutex);
 	
 	data->time = currentData.time;
 	data->latitude = currentData.latitude;
@@ -145,6 +155,7 @@ int GPS::getGPS_Data(GPS_Data *data) {
 	data->numSatelites = currentData.numSatelites;
 	data->horizDilution = currentData.horizDilution;
 	log->writeLogLine("Retrieved data.");
+	
 	return 0;
 }
 
@@ -298,16 +309,19 @@ double GPS::nmea2degrees(double nmea) {
 
 
 bool GPS::inError() {
+	boost::mutex::scoped_lock lock(uploader_mutex);
     time(&now);
-    if(!ready || !running || (difftime(now, lastData) > TIMEOUT) || noDataError) {
+    bool isError = !ready || !running || (difftime(now, lastData) > TIMEOUT) || noDataError;
+    if(isError) {
         log->writeLogLine("Checked for errors: GPS error found");
     } else {
         log->writeLogLine("Checked for errors: No errors found");
     }
-    return(!ready || !running || (difftime(now, lastData) > TIMEOUT) || noDataError);
+    return(isError);
 }
 
 bool GPS::inError(std::string *errorStr) {
+	boost::mutex::scoped_lock lock(uploader_mutex);
     time(&now);
     if(!ready) {
         *errorStr = "Error: GPS not set up";
@@ -328,6 +342,6 @@ bool GPS::inError(std::string *errorStr) {
     } else {
         *errorStr = "No errors detected";
         log->writeLogLine(*errorStr);
-        return true;
+        return false;
     }
 }

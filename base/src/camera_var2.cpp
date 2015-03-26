@@ -1,4 +1,19 @@
+//v1.1	4-10-2014	BAX
+//Jigged things around.  This class used to be CAMERA_VAR1.  Also: Mutexy goodness.
+
+
 #include "camera_var2.h"
+
+#include <iostream>
+#include <sstream>
+#include "opencv2/highgui/highgui.hpp"
+#include "opencv2/imgproc/imgproc.hpp"
+#include "RaspiCamCV.h"
+#include <time.h>
+#include <utility>
+#include <stdio.h>
+
+#include "config_parser.h"
 
 CAMERA_VAR2::CAMERA_VAR2() {
 	this->ready = false;
@@ -6,25 +21,33 @@ CAMERA_VAR2::CAMERA_VAR2() {
 	
 	//These are default values for detecting red objects.
 	//These will be overwritten soon.
-	this->MIN_HUE		= 320;
-	this->MAX_HUE		= 40;
-	this->MIN_SAT		= 127;
-	this->MAX_SAT		= 255;
-	this->MIN_VAL		= 95;
-	this->MAX_VAL		= 255;
-	this->PIXLE_THRESHOLD	= 60;
-    this->PIXLE_SKIP        = 3;
+	this->MIN_HUE1		= 320;
+	this->MAX_HUE1		= 40;
+	this->MIN_SAT1		= 127;
+	this->MAX_SAT1		= 255;
+	this->MIN_VAL1		= 95;
+	this->MAX_VAL1		= 255;
+	this->PIXLE_THRESHOLD1	= 60;
     
+    this->MIN_HUE2		= 180;
+	this->MAX_HUE2		= 260;
+	this->MIN_SAT2		= 95;
+	this->MAX_SAT2		= 255;
+	this->MIN_VAL2		= 95;
+	this->MAX_VAL2		= 255;
+	this->PIXLE_THRESHOLD2	= 30;
+    
+    this->PIXLE_SKIP        = 2;
     this->THREAD_SLEEP_TIME = 0;
 	
 	this->redObjectDetected = false;
 	this->redObject.x = -1;
 	this->redObject.y = -1;
+    
+    this->blueObjectDetected = false;
+	this->blueObject.x = -1;
+	this->blueObject.y = -1;
 	
-	this->window.x = 0;
-	this->window.w = 10;
-	this->window.y = 0;
-	this->window.l = 10;
 	
 	this->frame_counter = -1;
 	
@@ -43,7 +66,9 @@ int CAMERA_VAR2::setup() {
 	//log = new Logger("camera.log");
 	try {
 		CAMERA_COMMON::build_lookup_reduce_colourspace(lookup_reduce_colourspace);
-		CAMERA_COMMON::build_lookup_threshold(lookup_threshold, MIN_HUE, MAX_HUE, MIN_SAT, MAX_SAT, MIN_VAL, MAX_VAL);
+		CAMERA_COMMON::build_lookup_threshold(lookup_threshold_red, MIN_HUE1, MAX_HUE1, MIN_SAT1, MAX_SAT1, MIN_VAL1, MAX_VAL1);
+		CAMERA_COMMON::build_lookup_threshold(lookup_threshold_blue, MIN_HUE2, MAX_HUE2, MIN_SAT2, MAX_SAT2, MIN_VAL2, MAX_VAL2);
+
 		//log->writeLogLine("Lookup tables built.");
 	} catch(...) {
 		//log->writeLogLine("Error building lookup tables.");
@@ -60,14 +85,22 @@ int CAMERA_VAR2::setup() {
 int CAMERA_VAR2::setup(std::string fileName) {
     ConfigParser::ParamMap parameters;
     
-    parameters.insert("MIN_HUE", &MIN_HUE);
-    parameters.insert("MAX_HUE", &MAX_HUE);
-    parameters.insert("MIN_SAT", &MIN_SAT);
-    parameters.insert("MAX_SAT", &MAX_SAT);
-    parameters.insert("MIN_VAL", &MIN_VAL);
-    parameters.insert("MAX_VAL", &MAX_VAL);
+    parameters.insert("MIN_HUE1", &MIN_HUE1);
+    parameters.insert("MAX_HUE1", &MAX_HUE1);
+    parameters.insert("MIN_SAT1", &MIN_SAT1);
+    parameters.insert("MAX_SAT1", &MAX_SAT1);
+    parameters.insert("MIN_VAL1", &MIN_VAL1);
+    parameters.insert("MAX_VAL1", &MAX_VAL1);
+    parameters.insert("PIXLE_THRESHOLD1", &PIXLE_THRESHOLD1);
     
-    parameters.insert("PIXLE_THRESHOLD", &PIXLE_THRESHOLD);
+    parameters.insert("MIN_HUE2", &MIN_HUE2);
+    parameters.insert("MAX_HUE2", &MAX_HUE2);
+    parameters.insert("MIN_SAT2", &MIN_SAT2);
+    parameters.insert("MAX_SAT2", &MAX_SAT2);
+    parameters.insert("MIN_VAL2", &MIN_VAL2);
+    parameters.insert("MAX_VAL2", &MAX_VAL2);
+    parameters.insert("PIXLE_THRESHOLD2", &PIXLE_THRESHOLD2);
+    
     parameters.insert("PIXLE_SKIP", &PIXLE_SKIP);
     parameters.insert("THREAD_SLEEP_TIME", &THREAD_SLEEP_TIME);
     
@@ -91,6 +124,7 @@ int CAMERA_VAR2::stop() {
 	if(!running) return -1;
 	
 	running = false;
+	boost::mutex::scoped_lock lock(process_mutex);
 	//log->writeLogLine("Camera stopped.");
 	return 0;
 }
@@ -100,7 +134,6 @@ int CAMERA_VAR2::close() {
 	if(running) return -1;
 	if(!ready) return -1;
 	
-	waitKey(200);
 	raspiCamCvReleaseCapture(&capture);
 	ready = false;
 	//log->writeLogLine("Connection to Camera closed");
@@ -113,35 +146,51 @@ void CAMERA_VAR2::processImages() {
 	time(&start_time);
 	frame_counter = 0;
 	while(running) {
+		process_mutex.lock();
 		
 		IplImage* image_raspi = raspiCamCvQueryFrame(capture);	//MAYBE DO THIS BETTER
-		Mat image(image_raspi);
+		cv::Mat image(image_raspi);
 		
-		if(getRedObjectCentre(image, lookup_reduce_colourspace, lookup_threshold, &redObjectDetected, &redObject, &window)) {
-			drawObjectMarker(image, Point(redObject.x+image.cols/2, -redObject.y+image.rows/2));
-		}
-		drawBox(image, window);
-		drawCrosshair(image);
-        imshow("Image", image);
+		findObjects(image, lookup_reduce_colourspace, lookup_threshold_red, &redObjectDetected, &redObject, lookup_threshold_blue, &blueObjectDetected, &blueObject);
         
+        if(redObjectDetected) {
+            CAMERA_COMMON::drawObjectMarker(image, cv::Point(redObject.x+image.cols/2, -redObject.y+image.rows/2), cv::Scalar(0, 0, 255));
+        }
+        
+        if(blueObjectDetected) {
+            CAMERA_COMMON::drawObjectMarker(image, cv::Point(blueObject.x+image.cols/2, -blueObject.y+image.rows/2), cv::Scalar(255, 0, 0));
+        }
+		
+		CAMERA_COMMON::drawCrosshair(image);
+        cv::imshow("Image", image);
+
 		if(takePhotoThisCycle) {
-			//imwrite(std::string("photos/") + imageFileName, image);
-			imwrite(imageFileName, image);
+			//imwrite(std::string("../") + imageFileName, image);
+			cv::imwrite(imageFileName, image);
 			takePhotoThisCycle = false;
 		}
 		frame_counter++;
-		waitKey(1);
+		cv::waitKey(1);
+		
+		process_mutex.unlock();
         if(THREAD_SLEEP_TIME > 0) {
             boost::this_thread::sleep(boost::posix_time::milliseconds(THREAD_SLEEP_TIME));
         }
 	}
 }
 
-bool CAMERA_VAR2::objectDetected() {
+bool CAMERA_VAR2::objectOneDetected() {
+	boost::mutex::scoped_lock lock(process_mutex);
 	return redObjectDetected;
 }
 
-int CAMERA_VAR2::getObjectLocation(ObjectLocation *data) {
+bool CAMERA_VAR2::objectTwoDetected() {
+	boost::mutex::scoped_lock lock(process_mutex);
+	return blueObjectDetected;
+}
+
+int CAMERA_VAR2::getObjectOneLocation(ObjectLocation *data) {
+	boost::mutex::scoped_lock lock(process_mutex);
 	data->x = redObject.x;
 	data->y = redObject.y;
     
@@ -152,118 +201,75 @@ int CAMERA_VAR2::getObjectLocation(ObjectLocation *data) {
     }
 }
 
+int CAMERA_VAR2::getObjectTwoLocation(ObjectLocation *data) {
+	boost::mutex::scoped_lock lock(process_mutex);
+	data->x = blueObject.x;
+	data->y = blueObject.y;
+    
+    if(!blueObjectDetected) {
+        return -1;
+    } else {
+        return 0;	//Deja vu.
+    }
+}
+
 double CAMERA_VAR2::getFramerate() {
+	boost::mutex::scoped_lock lock(process_mutex);
 	time(&end_time);
 	return frame_counter/difftime(end_time, start_time);
 }
 
 void CAMERA_VAR2::takePhoto(std::string fileName) {
+	boost::mutex::scoped_lock lock(process_mutex);
 	if(!fileName.empty()) imageFileName = fileName;
 	takePhotoThisCycle = true;
 }
 
 
-bool CAMERA_VAR2::getRedObjectCentre(Mat& Isrc, const uchar table_reduce_colorspace[],  const uchar table_threshold[][LOOKUP_SIZE][LOOKUP_SIZE], bool *redObjectDetected, ObjectLocation *redObject, CamWindow *window) {
-	int rowStart = window->y;
-	int rowEnd = rowStart + window->l;
-    int colStart = window->x;
-	int colEnd = colStart + window->w;
+void CAMERA_VAR2::findObjects(cv::Mat& Isrc, const uchar table_reduce_colorspace[], const uchar table_threshold_red[][LOOKUP_SIZE][LOOKUP_SIZE], bool *redObjectDetected, ObjectLocation *redObject, const uchar table_threshold_blue[][LOOKUP_SIZE][LOOKUP_SIZE], bool *blueObjectDetected, ObjectLocation *blueObject) {
+	int nRows = Isrc.rows;
+	int nCols = Isrc.cols;
 	int nChannels = Isrc.channels();
-    
-    //int xc = redObject->x + Isrc.cols/2;
-    //int yc = redObject->y + Isrc.rows/2;
 	
-	int M00 = 0;	//Mxy
-    int M01 = 0;
-    //int M02 = 0;
-	int M10 = 0;
-    //int M11 = 0;
-    //int M20 = 0;
+	int M00_red = 0;		//Mxy
+	int M01_red = 0;
+	int M10_red = 0;
+	
+	int M00_blue = 0;		//Mxy
+	int M01_blue = 0;
+	int M10_blue = 0;
 
-	int i, j, k;
+	int i, j, k;		//k = 3*i
 	uchar* p;
-	for(j=rowStart; j<rowEnd; j += PIXLE_SKIP) {
+	for(j=0; j<nRows; j += PIXLE_SKIP) {
 		p = Isrc.ptr<uchar>(j);
-		for (i=colStart; i<colEnd; i += PIXLE_SKIP) {
+		for (i=0; i<nCols; i += PIXLE_SKIP) {
 			k = i*nChannels;
-			if(table_threshold[table_reduce_colorspace[p[k+2]]][table_reduce_colorspace[p[k+1]]][table_reduce_colorspace[p[k]]]) {
-                M00 += 1;
-                M01 += j;
-                //M02 += j*j;
-                M10 += i;
-                //M11 += i*j;
-                //M20 += i*i;
+			if(table_threshold_red[table_reduce_colorspace[p[k+2]]][table_reduce_colorspace[p[k+1]]][table_reduce_colorspace[p[k]]]) {
+				M00_red += 1;
+				M01_red += j;
+				M10_red += i;
+			}
+			if(table_threshold_blue[table_reduce_colorspace[p[k+2]]][table_reduce_colorspace[p[k+1]]][table_reduce_colorspace[p[k]]]) {
+				M00_blue += 1;
+				M01_blue += j;
+				M10_blue += i;
 			}
 		}
 	}
 	//cout << "red points:" << pixle_counter;
-	if(M00 > PIXLE_THRESHOLD) {
-        *redObjectDetected = true;
-        //int a = M20/M00 - xc * xc;
-        //int b = 2*(M11/M00 - xc * yc);
-        //int c = M02/M00 - xc * xc;
-        //int temp = (int)sqrt(b*b+(a-c)*(a-c));
-        //int l = (int)sqrt((a+b+temp)/2);
-        //int w = (int)sqrt((a+b-temp)/2);
-        
-        int l = (int)(1.8*PIXLE_SKIP*sqrt(M00));
-        //int w = (int)(1.8*PIXLE_SKIP*sqrt(M00));
-        int w = l;
-        
-        redObject->x = M10/M00 - Isrc.cols/2;
-		redObject->y = -(M01/M00 - Isrc.rows/2);
-        
-        window->x = std::max(M10/M00 - w/2, 0);
-        window->w = std::min(w, Isrc.cols-window->x);
-        window->y = std::max(M01/M00 - l/2, 0);
-        window->l = std::min(l, Isrc.rows-window->y);
-		return true;
+	if(M00_red > PIXLE_THRESHOLD1) {
+		*redObjectDetected = true;
+		redObject->x = M10_red/M00_red - nCols/2;
+		redObject->y = -(M01_red/M00_red - nRows/2);
 	} else {
 		*redObjectDetected = false;
-        window->x = 0;
-        window->w = Isrc.cols;
-        window->y = 0;
-        window->l = Isrc.rows;
-		return false;
 	}
-}
-
-void CAMERA_VAR2::drawObjectMarker(Mat img, Point centre) {
-	int thickness = 3;
-	int lineType = 8;
-	Point cross_points[4];
-	cross_points[0] = Point(centre.x,	0);
-	cross_points[1] = Point(centre.x,	img.rows);
-	cross_points[2] = Point(0,			centre.y);
-	cross_points[3] = Point(img.cols,	centre.y);
-	for(int i=0; i<4; i+=2) {
-		line(img, cross_points[i], cross_points[i+1], Scalar(0, 0, 0), thickness, lineType);
-	}
-}
-
-void CAMERA_VAR2::drawCrosshair(Mat img) {
-	int thickness = 3;
-	int lineType = 8;
-	int size = 20;
-	Point cross_points[4];
-	cross_points[0] = Point(img.cols/2 - size,	img.rows/2);
-	cross_points[1] = Point(img.cols/2 + size,	img.rows/2);
-	cross_points[2] = Point(img.cols/2,	img.rows/2 - size);
-	cross_points[3] = Point(img.cols/2,	img.rows/2 + size);
-	for(int i=0; i<4; i+=2) {
-		line(img, cross_points[i], cross_points[i+1], Scalar(255, 255, 255), thickness, lineType);
-	}
-}
-
-void CAMERA_VAR2::drawBox(Mat img, CamWindow window) {
-	int thickness = 3;
-	int lineType = 8;
-	Point box_points[4];
-	box_points[0] = Point(window.x,	window.y);
-	box_points[1] = Point(window.x + window.w,	window.y);
-	box_points[2] = Point(window.x + window.w,	window.y + window.l);
-	box_points[3] = Point(window.x,	window.y + window.l);
-	for(int i=0; i<4; i++) {
-		line(img, box_points[i], box_points[(i+1)%4], Scalar(255, 255, 255 ), thickness, lineType);
+	if(M00_blue > PIXLE_THRESHOLD2) {
+		*blueObjectDetected = true;
+		blueObject->x = M10_blue/M00_blue - nCols/2;
+		blueObject->y = -(M01_blue/M00_blue - nRows/2);
+	} else {
+		*blueObjectDetected = false;
 	}
 }
