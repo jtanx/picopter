@@ -344,7 +344,7 @@ void flyTo(FlightBoard *fbPtr, GPS *gpsPtr, GPS_Data *dataPtr, IMU *imuPtr, IMU_
 		pastDistances[PAST_POINTS-1] = distance;	//Add on to the end
 		if (!gpio::isAutoMode()) {
 			terminateLawn(0);
-			return;
+			break;
 		}
 	}
 	logPtr->writeLogLine(str);
