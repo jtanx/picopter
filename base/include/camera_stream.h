@@ -88,6 +88,7 @@ private:
 	
 	time_t start_time, end_time;
 	int frame_counter;
+    double fps;
 	
 	bool takePhotoThisCycle;
 	std::string imageFileName;

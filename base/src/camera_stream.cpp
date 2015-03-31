@@ -56,6 +56,7 @@ CAMERA_STREAM::CAMERA_STREAM() {
     this->ERODE_ELEMENT = 8;
 	
 	this->frame_counter = -1;
+    this->fps = -1;
 	
 	this->takePhotoThisCycle = false;
 	this->imageFileName = "image.jpg";
@@ -189,8 +190,7 @@ void CAMERA_STREAM::getObjectLocations(std::vector<ObjectLocation> *list) {
 }
 double CAMERA_STREAM::getFramerate() {
 	boost::mutex::scoped_lock lock(process_mutex);
-	time(&end_time);
-	return frame_counter/difftime(end_time, start_time);
+	return fps;
 }
 
 void CAMERA_STREAM::takePhoto(std::string fileName) {
@@ -270,6 +270,11 @@ void CAMERA_STREAM::processImages() {
 		
 		cv::waitKey(1);
 		frame_counter++;
+        time(&end_time);
+        if (difftime(end_time, start_time) > 5) {
+            fps = frame_counter / difftime(end_time, start_time);
+            frame_counter = 0;
+        }
 		
 		/*----------------------*
 		 *         Sleep        *
@@ -646,11 +651,11 @@ void CAMERA_STREAM::drawBox(cv::Mat img, cv::Point topLeft, cv::Point bottomRigh
 void CAMERA_STREAM::drawFramerate(cv::Mat img) {
 	time(&end_time);
 	char string_buf[128];
-	sprintf(string_buf, "%3.4f fps", frame_counter/difftime(end_time, start_time));
+	sprintf(string_buf, "%3.4f fps", fps);
 	
 	int thickness = 1;
 	int lineType = 8;
-	cv::Point TL_corner(50*img.cols/100, 90*img.rows/100);
+	cv::Point TL_corner(30*img.cols/100, 90*img.rows/100);
 	cv::putText(img, string_buf, TL_corner, CV_FONT_HERSHEY_PLAIN, 1, cv::Scalar(255, 255, 255), thickness, lineType);
 }
 
