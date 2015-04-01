@@ -24,7 +24,7 @@
 
 #define AILERON_CHANNEL 0
 #define AILERON_PIN_PHYSICAL 11
-#define AILERON_PWM_MID 152			//Calibrated on October 17th
+#define AILERON_PWM_MID 150			//Calibrated on October 17th
 #define AILERON_PWM_SWING 41
 #define AILERON_SPEED_MID 0
 #define AILERON_SPEED_SWING 100

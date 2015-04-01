@@ -104,12 +104,11 @@ bool initialise(FlightBoard *fb, GPS *gps, IMU *imu, CAMERA_STREAM *cam) {
 	
 	
 	/* Initialise Camera */
-	/* 20/03/15: Temporarily disabled because no camera present */
-	/*if (cam->setup() != CAMERA_OK) {
+	if (cam->setup() != CAMERA_OK) {
 		cout << "\033[1;31m[COPTER]\033[0m Error setting up camera. Will retry continuously." << endl;
 		while (cam->setup() != CAMERA_OK) usleep(1000000);
-	}*/
-	cam->setMode(3);
+	}
+	cam->setMode(1);
 	cam->start();
 
 	return true;

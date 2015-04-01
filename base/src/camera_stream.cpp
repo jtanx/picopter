@@ -83,7 +83,14 @@ int CAMERA_STREAM::setup() {
 	
 	buildColours(&windowColours);
 	try {
-		capture = raspiCamCvCreateCameraCapture(0);
+		//capture = raspiCamCvCreateCameraCapture(0);
+        capture = cvCreateCameraCapture(-1);
+        if (capture == NULL) {
+            printf("Camera fail");
+            exit(1);
+        }
+        cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_WIDTH, CAMERA_WIDTH);
+        cvSetCaptureProperty(capture, CV_CAP_PROP_FRAME_HEIGHT, CAMERA_HEIGHT);
 	} catch(...) {
 		return -1;
 	}
@@ -145,7 +152,8 @@ int CAMERA_STREAM::close() {
 	if(running) return -1;
 	if(!ready) return -1;
 
-	raspiCamCvReleaseCapture(&capture);
+	//raspiCamCvReleaseCapture(&capture);
+    cvReleaseCapture(&capture);
 	ready = false;
 	return 0;
 }
@@ -207,6 +215,9 @@ void CAMERA_STREAM::takePhoto(std::string fileName) {
 void CAMERA_STREAM::processImages() {	
 	time(&start_time);
 	frame_counter = 0;
+    
+    //cv::Size sz(CAMERA_WIDTH, CAMERA_HEIGHT);
+    //cv::VideoWriter outStream(STREAM_FILE, CV_FOURCC('M','J','P','G'), 4, sz, true);
 	
 	while(running) {
 		process_mutex.lock();
@@ -215,7 +226,8 @@ void CAMERA_STREAM::processImages() {
 		 *      Load image      *
 		 *----------------------*/
 		
-		IplImage* image_raspi = raspiCamCvQueryFrame(capture);
+		//IplImage* image_raspi = raspiCamCvQueryFrame(capture);
+        IplImage* image_raspi = cvQueryFrame(capture);
 		cv::Mat image = cv::Mat(image_raspi);
 
 		/*----------------------*
@@ -261,19 +273,27 @@ void CAMERA_STREAM::processImages() {
 		 *     Stream image     *
 		 *----------------------*/
 		
-		cv::Mat frame;
-		cv::resize(image, frame, cv::Size(), STREAM_IMAGE_REDUCE, STREAM_IMAGE_REDUCE, cv::INTER_NEAREST);
-		cv::VideoWriter outStream(STREAM_FILE, CV_FOURCC('M','J','P','G'), 4, frame.size(), true);
+		//cv::Mat frame;
+		//cv::resize(image, frame, cv::Size(), STREAM_IMAGE_REDUCE, STREAM_IMAGE_REDUCE, cv::INTER_NEAREST);
+        //drawFramerate(frame);
+		//cv::VideoWriter outStream(STREAM_FILE, CV_FOURCC('M','J','P','G'), 4, frame.size(), true);
+		//if(outStream.isOpened()) {
+		//	outStream.write(frame);
+		//}
+        
+        drawFramerate(image);
+        cv::VideoWriter outStream(STREAM_FILE, CV_FOURCC('M','J','P','G'), 4, image.size(), true);
 		if(outStream.isOpened()) {
-			outStream.write(frame);
+			outStream.write(image);
 		}
 		
 		cv::waitKey(1);
 		frame_counter++;
         time(&end_time);
-        if (difftime(end_time, start_time) > 5) {
+        if (difftime(end_time, start_time) > 1) {
             fps = frame_counter / difftime(end_time, start_time);
             frame_counter = 0;
+            start_time = end_time;
         }
 		
 		/*----------------------*
@@ -649,10 +669,11 @@ void CAMERA_STREAM::drawBox(cv::Mat img, cv::Point topLeft, cv::Point bottomRigh
 }
 
 void CAMERA_STREAM::drawFramerate(cv::Mat img) {
-	time(&end_time);
+	//time(&end_time);
 	char string_buf[128];
 	sprintf(string_buf, "%3.4f fps", fps);
-	
+	//printf("%3.4f\n", fps);
+    
 	int thickness = 1;
 	int lineType = 8;
 	cv::Point TL_corner(30*img.cols/100, 90*img.rows/100);

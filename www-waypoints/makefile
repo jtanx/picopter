@@ -1,7 +1,7 @@
 ##### General
 CC                = g++
 CFLAGS            = -O2 -Wall -c
-INCLUDES          = -I/usr/local/include  -Iinclude
+INCLUDES          = -I/usr/include/opencv -I/usr/local/include  -Iinclude
 LIBS              = -L/usr/local/lib -L/usr/lib -L../../lib/Xsens
 LDFLAGS           = -lwiringPi -lthrift -lboost_thread -lboost_system -lncurses -lpthread -lcmt -lrt
 
@@ -35,7 +35,7 @@ gen-cpp/picopter_types.h: picopter.thrift
 	thrift --gen php picopter.thrift
 	
 bin/picopter: $(MODULES_OBJECTS) $(BASE_OBJECTS) obj/webInterface.o obj/picopter_types.o obj/picopter.o obj/waypoints.o obj/userTracking.o obj/control.o obj/structures.o
-	$(CC) $(INCLUDES) $^ -o $@ $(LIBS) $(RASPICAM_LINKS) $(OPEN_CV) $(LDFLAGS)
+	$(CC) $(OPEN_CV) $(INCLUDES) $^ -o $@ $(LIBS) $(RASPICAM_LINKS) $(OPEN_CV) $(LDFLAGS)
 	
 obj/webInterface.o: gen-cpp/webInterface.cpp
 	$(CC) $(CFLAGS) $(THRIFT_FLAGS) $(INCLUDES) $(THRIFT_INCLUDES) $^ -o $@ $(LIBS)

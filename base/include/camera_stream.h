@@ -16,6 +16,8 @@
 
 #include <string>
 #include <vector>
+#include "cv.h"
+#include "highgui.h"
 #include "RaspiCamCV.h"
 #include "opencv2/imgproc/imgproc.hpp"
 #include <boost/thread.hpp>
@@ -84,7 +86,8 @@ private:
 	boost::thread* process_thread;
 	boost::mutex process_mutex;
 	
-	RaspiCamCvCapture* capture;
+	//RaspiCamCvCapture* capture;
+    CvCapture* capture;
 	
 	time_t start_time, end_time;
 	int frame_counter;
