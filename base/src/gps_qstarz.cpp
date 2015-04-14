@@ -114,6 +114,40 @@ void GPS::uploadData() {
 	std::string gpsString;
 	int problems;
 	while(running) {
+        uint8_t buf = serialGetchar(fileDes);
+        uint8_t decodedMessage = decoder.decode(buf);
+        switch (decodedMessage)
+        {
+            case NAZA_MESSAGE_GPS:
+                if (decoder.getFixType() == NazaDecoderLib::NO_FIX) {
+                    noDataError = true;
+                } else {
+                    uploader_mutex.lock();
+                    currentData.latitude = decoder.getLat();
+                    currentData.longitude = decoder.getLon();
+                    currentData.fixQuality = decoder.getFixType();
+                    currentData.numSatelites = decoder.getNumSat();
+                    currentData.horizDilution = decoder.getHdop();
+                    noDataError = false;
+                    time(&lastData);
+                    uploader_mutex.unlock();
+                   
+                    
+                    char buf[BUFSIZ];
+                    sprintf(buf, "%.06f,%.06f,%.03f,%.2f,%.2f,%d,%d", currentData.latitude, currentData.longitude, currentData.heading, currentData.time, currentData.horizDilution, currentData.fixQuality, currentData.numSatelites);
+                    log->writeLogLine(buf);
+                }
+            break;
+          case NAZA_MESSAGE_COMPASS:
+            uploader_mutex.lock();
+            currentData.heading = decoder.getHeadingNc();
+            if (currentData.heading > 180) {
+                currentData.heading = 180.0 - currentData.heading;
+            }
+            uploader_mutex.unlock();
+            break;
+        }
+        /*
 		uploader_mutex.lock();
 		gpsString = getGPSString(fileDes);
 		//std::cout << "gpsString: " << gpsString << std::endl;
@@ -139,6 +173,7 @@ void GPS::uploadData() {
         if(THREAD_SLEEP_TIME > 0) {
             boost::this_thread::sleep(boost::posix_time::milliseconds(THREAD_SLEEP_TIME));
         }
+        */
 	}
 }
 

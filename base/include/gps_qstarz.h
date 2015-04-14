@@ -50,8 +50,10 @@
 #include <boost/thread.hpp>
 
 #include "logger.h"
+#include "NazaDecoderLib.h"
 
-#define GPS_DEVICE_FILE "/dev/ttyACM0"
+//#define GPS_DEVICE_FILE "/dev/ttyACM0"
+#define GPS_DEVICE_FILE "/dev/ttyAMA0"
 #define GPS_BAUD_RATE 115200
 
 #define GPS_OK 0
@@ -66,6 +68,7 @@ typedef struct {
 	double time;
 	double longitude;
 	double latitude;
+    double heading;
 	int fixQuality;
 	int numSatelites;
 	double horizDilution;
@@ -174,6 +177,7 @@ private:
     int THREAD_SLEEP_TIME, TIMEOUT; //Configurable parameters
     
 	GPS_Data currentData;
+    NazaDecoderLib decoder;
 	bool ready;
 	bool running;
 	Logger* log;
