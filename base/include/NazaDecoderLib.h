@@ -9,7 +9,7 @@
 #ifndef __NAZA_DECODER_LIB_H__
 #define __NAZA_DECODER_LIB_H__
 
-#include <cstdint>
+#include <stdint.h>
 
 #define NAZA_MESSAGE_NONE     0x00
 #define NAZA_MESSAGE_GPS      0x10

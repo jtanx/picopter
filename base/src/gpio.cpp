@@ -88,7 +88,8 @@ int gpio::startServoBlaster() {
 
 int gpio::stopServoBlaster() {
 	if(gpio::servoBlasterRunning) {
-		system("service servoblaster stop");
+		//system("service servoblaster stop");
+        gpio::setServoBlaster(0, 0, 0, 0);
 		gpio::servoBlasterRunning = false;
 		return 0;
 	} else {

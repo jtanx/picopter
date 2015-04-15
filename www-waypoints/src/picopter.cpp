@@ -108,7 +108,7 @@ bool initialise(FlightBoard *fb, GPS *gps, IMU *imu, CAMERA_STREAM *cam) {
 		cout << "\033[1;31m[COPTER]\033[0m Error setting up camera. Will retry continuously." << endl;
 		while (cam->setup() != CAMERA_OK) usleep(1000000);
 	}
-	cam->setMode(1);
+	cam->setMode(3);
 	cam->start();
 
 	return true;

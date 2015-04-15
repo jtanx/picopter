@@ -10,7 +10,7 @@ THRIFT_FLAGS      = -DHAVE_INTTYPES_H -DHAVE_NETINET_IN_H
 THRIFT_INCLUDES   = -Igen-cpp -I/usr/local/include/thrift
 
 ##### picopter-base
-BASE              = gpio logger flightBoard config_parser gps_qstarz imu_euler buzzer camera_stream
+BASE              = gpio logger flightBoard config_parser gps_qstarz imu_euler buzzer camera_stream NazaDecoderLib
 BASE_INCLUDES     = -I../base/include
 BASE_OBJECTS      = $(addprefix ../base/obj/, $(addsuffix .o, $(BASE)))
 
