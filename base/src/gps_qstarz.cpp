@@ -177,7 +177,7 @@ void GPS::uploadData() {
             uploader_mutex.lock();
             currentData.heading = decoder.getHeadingNc();
             if (currentData.heading > 180) {
-                currentData.heading = 180.0 - currentData.heading;
+                currentData.heading = currentData.heading - 360.0;
             }
             uploader_mutex.unlock();
             break;

@@ -48,7 +48,10 @@ class NazaDecoderLib
         int16_t getMagXval();
         int16_t getMagYval();
         int16_t getMagZval();
-
+		int16_t getMagXRaw();
+		int16_t getMagYRaw();
+		int16_t getMagZRaw();
+		
     private:
         int payload[58];
         int seq;
@@ -64,9 +67,13 @@ class NazaDecoderLib
         int16_t magZMin;
         int16_t magZMax;
 
-        int16_t magXVal;    //raw magnetometer data
+        int16_t magXVal;    //compensated magnetometer data
         int16_t magYVal;
         int16_t magZVal;
+        
+        int16_t magXRaw;
+        int16_t magYRaw;
+        int16_t magZRaw;
 
 
         double lon;     // longitude in degree decimal
