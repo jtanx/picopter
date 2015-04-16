@@ -52,6 +52,7 @@ void waypointsFlightLoop(FlightBoard &fb, GPS &gps, IMU &imu, Buzzer &buzzer, Lo
 	char str_buf[BUFSIZ];
 	bool useimu = false;	// Manual setting for debug
 	double yaw = 0;	
+	GPS_Data gps_data;
 	
 	for(size_t i = 0; i != waypoints_list.size(); i++) {
 		cout << '         ' << i+1 << ": (" << waypoints_list[i].lat << ", " << waypoints_list[i].lon << ")" << endl;
@@ -60,11 +61,11 @@ void waypointsFlightLoop(FlightBoard &fb, GPS &gps, IMU &imu, Buzzer &buzzer, Lo
 	state = 6;
 	while ( !gpio::isAutoMode() ) usleep(1000000);
 	
-	if (!useimu) {
+	/*if (!useimu) {
 		buzzer.playBuzzer(0.25, 100, 100);
 		state = 5;
 		yaw = inferBearing(&fb, &gps, &logs);
-	}
+	}*/
 	
 	coord		currentCoord = {-1, -1};
 	double		distanceToNextWaypoint;
@@ -74,7 +75,9 @@ void waypointsFlightLoop(FlightBoard &fb, GPS &gps, IMU &imu, Buzzer &buzzer, Lo
 
 	try {	// Check for any errors, and stop the copter.
 		while(!exitProgram) {
-			currentCoord = getCoord(&gps);
+			gps.getGPS_Data(&gps_data);
+			currentCoord.lat = gps_data.latitude;
+			currentCoord.lon = gps_data.longitude;
 			
 			if (wp_it == waypoints_list.size()) {
 				wp_it = 0;
@@ -83,7 +86,8 @@ void waypointsFlightLoop(FlightBoard &fb, GPS &gps, IMU &imu, Buzzer &buzzer, Lo
 
 			distanceToNextWaypoint = calculate_distance(currentCoord, waypoints_list[wp_it]);
 			bearingToNextWaypoint = calculate_bearing(currentCoord, waypoints_list[wp_it]);
-			if (useimu) yaw = getYaw(&imu);			
+			//if (useimu) yaw = getYaw(&imu);
+			yaw = gps_data.heading;			
 
 			/* State 4: Manual mode. */
 			if (!gpio::isAutoMode()) {

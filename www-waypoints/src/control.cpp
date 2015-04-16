@@ -117,7 +117,7 @@ void setCourse(FB_Data *instruction, double distance, double bearing, double yaw
 	}
 	instruction->aileron  = (int) (speed * sin( DEGTORAD(bearing - yaw) ));
 	instruction->elevator = (int) (speed * cos( DEGTORAD(bearing - yaw) ));
-	instruction->rudder   = 0;
+	instruction->rudder   = 0;//20 * sin(DEGTORAD(bearing - yaw));
 	instruction->gimbal   = 0;
 }
 

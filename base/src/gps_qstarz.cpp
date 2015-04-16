@@ -24,6 +24,33 @@
 //#include "logger.h"
 #include "config_parser.h"
 
+#define _USE_MATH_DEFINES
+#include <cmath>
+#define RADTODEG(x) 		((x) * (180.0 / M_PI))
+#define DEGTORAD(x)			((x) * (M_PI / 180.0))
+
+typedef struct {		// Holds a (latitude,longtitude) pair, in degrees.
+	double lat;
+	double lon;
+} coord;
+
+static coord coordToRad(coord pos) {
+	pos.lat = DEGTORAD(pos.lat);
+	pos.lon = DEGTORAD(pos.lon);
+	return pos;
+}
+
+static double calculate_bearing(coord pos1, coord pos2) {
+	pos1 = coordToRad(pos1);
+	pos2 = coordToRad(pos2);
+	
+	double num = sin(pos2.lon - pos1.lon) * cos(pos2.lat);
+	double den = cos(pos1.lat)*sin(pos2.lat) - sin(pos1.lat)*cos(pos2.lat)*cos(pos2.lon-pos1.lon);
+
+	double bearing = atan2(num, den);
+	return RADTODEG(bearing);
+}
+
 GPS::GPS() {
 	this->ready = false;
 	this->running = false;
@@ -122,6 +149,10 @@ void GPS::uploadData() {
                 if (decoder.getFixType() == NazaDecoderLib::NO_FIX) {
                     noDataError = true;
                 } else {
+                    coord prev, current;
+                    prev.lat = currentData.latitude;
+                    prev.lon = currentData.longitude;
+                    
                     uploader_mutex.lock();
                     currentData.latitude = decoder.getLat();
                     currentData.longitude = decoder.getLon();
@@ -131,10 +162,14 @@ void GPS::uploadData() {
                     noDataError = false;
                     time(&lastData);
                     uploader_mutex.unlock();
+                    
+                    current.lat = currentData.latitude;
+                    current.lon = currentData.longitude;
+                    double bearing = calculate_bearing(prev,current);
                    
                     
                     char buf[BUFSIZ];
-                    sprintf(buf, "%.06f,%.06f,%.03f,%.2f,%.2f,%d,%d", currentData.latitude, currentData.longitude, currentData.heading, currentData.time, currentData.horizDilution, currentData.fixQuality, currentData.numSatelites);
+                    sprintf(buf, "%.06f,%.06f,%.03f,%.03f,%.2f,%.2f,%d,%d", currentData.latitude, currentData.longitude, bearing, currentData.heading, currentData.time, currentData.horizDilution, currentData.fixQuality, currentData.numSatelites);
                     log->writeLogLine(buf);
                 }
             break;
