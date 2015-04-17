@@ -37,7 +37,7 @@
 		$transport->close();
 		
 	} catch (TException $tx) {
-		//print 'TException: '.$tx->getMessage()."\n";
+		print 'TException: '.$tx->getMessage()."\n";
 		print "Error connecting to flight program.";
 	}
 ?>
