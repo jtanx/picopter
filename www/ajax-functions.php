@@ -80,6 +80,11 @@
 				print "beginUserTrackingThread " . $b[$ans] . "\n";
 				break;
 				
+			case "beginObjectTracking":
+				$ans = $client->beginObjectTrackingThread();
+				print "beginObjectTracking " . $b[$ans] . "\n";
+				break;
+				
 			case "requestNextWaypoint":
 				$ans = $client->requestNextWaypoint();
 				print $ans-lat . ", " . $ans->lon;

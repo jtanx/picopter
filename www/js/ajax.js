@@ -29,7 +29,7 @@ function allStop() {
 function beginAuto() {
 	if (!canEdit && bounds.length == 2) {
 		ajaxSend('updateWaypoints', bounds);
-		setTimeout(function() {
+		setTimeout(function() { //This is so dodgy
 			ajaxSend('beginAuto');
 		},500);
 	}
@@ -48,6 +48,10 @@ function beginUserTracking() {
 	if ((navigator.geolocation)) {
 		ajaxSend('beginUserTracking');
 	}
+}
+
+function beginObjectTracking() {
+  ajaxSend('beginObjectTracking');
 }
 
 (function worker() {
