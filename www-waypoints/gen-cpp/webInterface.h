@@ -18,6 +18,7 @@ class webInterfaceIf {
   virtual bool beginWaypointsThread() = 0;
   virtual bool beginLawnmowerThread() = 0;
   virtual bool beginUserTrackingThread() = 0;
+  virtual bool beginObjectTrackingThread() = 0;
   virtual bool allStop() = 0;
   virtual void requestStatus(std::string& _return) = 0;
   virtual void requestCoords(coordDeg& _return) = 0;
@@ -64,6 +65,10 @@ class webInterfaceNull : virtual public webInterfaceIf {
     return _return;
   }
   bool beginUserTrackingThread() {
+    bool _return = false;
+    return _return;
+  }
+  bool beginObjectTrackingThread() {
     bool _return = false;
     return _return;
   }
@@ -375,6 +380,100 @@ class webInterface_beginUserTrackingThread_presult {
   bool* success;
 
   _webInterface_beginUserTrackingThread_presult__isset __isset;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+
+};
+
+
+class webInterface_beginObjectTrackingThread_args {
+ public:
+
+  webInterface_beginObjectTrackingThread_args() {
+  }
+
+  virtual ~webInterface_beginObjectTrackingThread_args() throw() {}
+
+
+  bool operator == (const webInterface_beginObjectTrackingThread_args & /* rhs */) const
+  {
+    return true;
+  }
+  bool operator != (const webInterface_beginObjectTrackingThread_args &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const webInterface_beginObjectTrackingThread_args & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+
+class webInterface_beginObjectTrackingThread_pargs {
+ public:
+
+
+  virtual ~webInterface_beginObjectTrackingThread_pargs() throw() {}
+
+
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _webInterface_beginObjectTrackingThread_result__isset {
+  _webInterface_beginObjectTrackingThread_result__isset() : success(false) {}
+  bool success;
+} _webInterface_beginObjectTrackingThread_result__isset;
+
+class webInterface_beginObjectTrackingThread_result {
+ public:
+
+  webInterface_beginObjectTrackingThread_result() : success(0) {
+  }
+
+  virtual ~webInterface_beginObjectTrackingThread_result() throw() {}
+
+  bool success;
+
+  _webInterface_beginObjectTrackingThread_result__isset __isset;
+
+  void __set_success(const bool val) {
+    success = val;
+  }
+
+  bool operator == (const webInterface_beginObjectTrackingThread_result & rhs) const
+  {
+    if (!(success == rhs.success))
+      return false;
+    return true;
+  }
+  bool operator != (const webInterface_beginObjectTrackingThread_result &rhs) const {
+    return !(*this == rhs);
+  }
+
+  bool operator < (const webInterface_beginObjectTrackingThread_result & ) const;
+
+  uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
+  uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
+
+};
+
+typedef struct _webInterface_beginObjectTrackingThread_presult__isset {
+  _webInterface_beginObjectTrackingThread_presult__isset() : success(false) {}
+  bool success;
+} _webInterface_beginObjectTrackingThread_presult__isset;
+
+class webInterface_beginObjectTrackingThread_presult {
+ public:
+
+
+  virtual ~webInterface_beginObjectTrackingThread_presult() throw() {}
+
+  bool* success;
+
+  _webInterface_beginObjectTrackingThread_presult__isset __isset;
 
   uint32_t read(::apache::thrift::protocol::TProtocol* iprot);
 
@@ -1189,6 +1288,9 @@ class webInterfaceClient : virtual public webInterfaceIf {
   bool beginUserTrackingThread();
   void send_beginUserTrackingThread();
   bool recv_beginUserTrackingThread();
+  bool beginObjectTrackingThread();
+  void send_beginObjectTrackingThread();
+  bool recv_beginObjectTrackingThread();
   bool allStop();
   void send_allStop();
   bool recv_allStop();
@@ -1231,6 +1333,7 @@ class webInterfaceProcessor : public ::apache::thrift::TDispatchProcessor {
   void process_beginWaypointsThread(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_beginLawnmowerThread(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_beginUserTrackingThread(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
+  void process_beginObjectTrackingThread(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_allStop(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_requestStatus(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
   void process_requestCoords(int32_t seqid, ::apache::thrift::protocol::TProtocol* iprot, ::apache::thrift::protocol::TProtocol* oprot, void* callContext);
@@ -1245,6 +1348,7 @@ class webInterfaceProcessor : public ::apache::thrift::TDispatchProcessor {
     processMap_["beginWaypointsThread"] = &webInterfaceProcessor::process_beginWaypointsThread;
     processMap_["beginLawnmowerThread"] = &webInterfaceProcessor::process_beginLawnmowerThread;
     processMap_["beginUserTrackingThread"] = &webInterfaceProcessor::process_beginUserTrackingThread;
+    processMap_["beginObjectTrackingThread"] = &webInterfaceProcessor::process_beginObjectTrackingThread;
     processMap_["allStop"] = &webInterfaceProcessor::process_allStop;
     processMap_["requestStatus"] = &webInterfaceProcessor::process_requestStatus;
     processMap_["requestCoords"] = &webInterfaceProcessor::process_requestCoords;
@@ -1306,6 +1410,15 @@ class webInterfaceMultiface : virtual public webInterfaceIf {
       ifaces_[i]->beginUserTrackingThread();
     }
     return ifaces_[i]->beginUserTrackingThread();
+  }
+
+  bool beginObjectTrackingThread() {
+    size_t sz = ifaces_.size();
+    size_t i = 0;
+    for (; i < (sz - 1); ++i) {
+      ifaces_[i]->beginObjectTrackingThread();
+    }
+    return ifaces_[i]->beginObjectTrackingThread();
   }
 
   bool allStop() {

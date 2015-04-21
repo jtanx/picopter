@@ -170,6 +170,10 @@ class webInterfaceHandler : virtual public webInterfaceIf {
 				return false;
 			}
 		}
+
+		bool beginObjectTrackingThread() {
+			return false;
+		}
 		
 		/*
 		 *	beginLawnmowerThread
