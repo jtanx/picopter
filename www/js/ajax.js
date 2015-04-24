@@ -22,6 +22,20 @@ function ajaxSend(action,data) {
 	});	
 }
 
+function ajaxSendRaw(action, data) {
+  return $.ajax({
+		type: "POST",
+		url: "ajax-thrift.php",
+		data: {
+			'action': action,
+			'data'   : data
+		},
+		success: function(response) {
+			$('#response').html(response);
+		}
+	});	
+}
+
 function allStop() {
 	ajaxSend('allStop');
 }
@@ -50,8 +64,8 @@ function beginUserTracking() {
 	}
 }
 
-function beginObjectTracking() {
-  ajaxSend('beginObjectTracking');
+function beginObjectTracking(method) {
+  ajaxSendRaw('beginObjectTracking', method);
 }
 
 (function worker() {

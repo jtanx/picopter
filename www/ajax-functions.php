@@ -3,16 +3,24 @@
 
 //	print "Received '" . $_POST['action'] . "'<p>";
 	
-	if (isset($_POST["action"])) {
-		switch ($_POST['action']) {
+	$action  = $_POST["action"];
+	$source = $_POST;
+	if (!isset($action)) {
+		$action = $_GET["action"];
+		$source = $_GET;
+	}
+	
+	
+	if (isset($action)) {
+		switch ($action) {
 			
 			case "requestAll":
 				$coords = $client->requestCoords();
 				
-				if (isset($_POST["lat"])) {
+				if (isset($source["lat"])) {
 					$wp = new \picopter\coordDeg();
-					$wp->lat = $_POST['lat'];
-					$wp->lon = $_POST['lon'];
+					$wp->lat = $source['lat'];
+					$wp->lon = $source['lon'];
 					
 					$client->updateUserPosition($wp);
 				}
@@ -43,10 +51,10 @@
 				break;
 				
 			case "updateWaypoints":
-				if (isset($_POST["data"])) {
+				if (isset($source["data"])) {
 					$waypoints = array();
 					
-					foreach ( $_POST["data"] as $i) {
+					foreach ( $source["data"] as $i) {
 						$wp = new \picopter\coordDeg();
 						$wp->lat = $i[0];
 						$wp->lon = $i[1];
@@ -81,7 +89,13 @@
 				break;
 				
 			case "beginObjectTracking":
-				$ans = $client->beginObjectTrackingThread();
+				if (isset($source["data"])) {
+					$method = intval($source["data"]);
+					$ans = $client->beginObjectTrackingThread($method);
+				} else {
+					//Default to strafing tracking
+					$ans = $client->beginObjectTrackingThread(0);
+				}
 				print "beginObjectTracking " . $b[$ans] . "\n";
 				break;
 				
@@ -91,7 +105,7 @@
 				break;
 
 			default:
-				echo "Invalid request: '" . $_POST['action'] . "'";
+				echo "Invalid request: '" . $source['action'] . "'";
 		}
 	} else {
 		echo "No request specified";
