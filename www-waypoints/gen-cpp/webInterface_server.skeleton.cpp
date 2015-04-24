@@ -37,6 +37,11 @@ class webInterfaceHandler : virtual public webInterfaceIf {
     printf("beginUserTrackingThread\n");
   }
 
+  bool beginObjectTrackingThread() {
+    // Your implementation goes here
+    printf("beginObjectTrackingThread\n");
+  }
+
   bool allStop() {
     // Your implementation goes here
     printf("allStop\n");
