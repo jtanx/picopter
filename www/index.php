@@ -82,6 +82,10 @@
 					<button id="track-user" class="cbtn roundbtn" onclick="beginUserTracking()">Track Device</button>
 					<button id="track-object" class="cbtn roundbtn disabled" onclick="beginObjectTracking(0)">Track Strafe</button>
 					<button id="track-object" class="cbtn roundbtn disabled" onclick="beginObjectTracking(1)">Track Rotate</button>
+					<button id="track-object" class="cbtn roundbtn disabled" onclick="setCameraMode()">Cycle mode</button>
+					<button id="track-object" class="cbtn roundbtn disabled" onclick="setCameraLearningSize(true)">Dec size</button>
+					<button id="track-object" class="cbtn roundbtn disabled" onclick="setCameraLearningSize(false)">Inc size</button>
+					<button id="track-object" class="cbtn roundbtn disabled" onclick="doCameraLearning()">LEARN</button>
 				</div>
 				
 				<div id="information" class="text"></div>

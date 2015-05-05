@@ -19,7 +19,7 @@ interface webInterfaceIf {
   public function beginWaypointsThread();
   public function beginLawnmowerThread();
   public function beginUserTrackingThread();
-  public function beginObjectTrackingThread();
+  public function beginObjectTrackingThread($method);
   public function allStop();
   public function requestStatus();
   public function requestCoords();
@@ -191,15 +191,16 @@ class webInterfaceClient implements \picopter\webInterfaceIf {
     throw new \Exception("beginUserTrackingThread failed: unknown result");
   }
 
-  public function beginObjectTrackingThread()
+  public function beginObjectTrackingThread($method)
   {
-    $this->send_beginObjectTrackingThread();
+    $this->send_beginObjectTrackingThread($method);
     return $this->recv_beginObjectTrackingThread();
   }
 
-  public function send_beginObjectTrackingThread()
+  public function send_beginObjectTrackingThread($method)
   {
     $args = new \picopter\webInterface_beginObjectTrackingThread_args();
+    $args->method = $method;
     $bin_accel = ($this->output_ instanceof TProtocol::$TBINARYPROTOCOLACCELERATED) && function_exists('thrift_protocol_write_binary');
     if ($bin_accel)
     {
@@ -1016,11 +1017,21 @@ class webInterface_beginUserTrackingThread_result {
 class webInterface_beginObjectTrackingThread_args {
   static $_TSPEC;
 
+  public $method = null;
 
-  public function __construct() {
+  public function __construct($vals=null) {
     if (!isset(self::$_TSPEC)) {
       self::$_TSPEC = array(
+        -1 => array(
+          'var' => 'method',
+          'type' => TType::I32,
+          ),
         );
+    }
+    if (is_array($vals)) {
+      if (isset($vals['method'])) {
+        $this->method = $vals['method'];
+      }
     }
   }
 
@@ -1043,6 +1054,13 @@ class webInterface_beginObjectTrackingThread_args {
       }
       switch ($fid)
       {
+        case -1:
+          if ($ftype == TType::I32) {
+            $xfer += $input->readI32($this->method);
+          } else {
+            $xfer += $input->skip($ftype);
+          }
+          break;
         default:
           $xfer += $input->skip($ftype);
           break;
@@ -1056,6 +1074,11 @@ class webInterface_beginObjectTrackingThread_args {
   public function write($output) {
     $xfer = 0;
     $xfer += $output->writeStructBegin('webInterface_beginObjectTrackingThread_args');
+    if ($this->method !== null) {
+      $xfer += $output->writeFieldBegin('method', TType::I32, -1);
+      $xfer += $output->writeI32($this->method);
+      $xfer += $output->writeFieldEnd();
+    }
     $xfer += $output->writeFieldStop();
     $xfer += $output->writeStructEnd();
     return $xfer;

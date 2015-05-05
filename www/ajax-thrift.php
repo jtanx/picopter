@@ -7,7 +7,7 @@
 
 	use Thrift\ClassLoader\ThriftClassLoader;
 
-	$GEN_DIR = '/home/pi/picopter/www-waypoints/gen-php';
+	$GEN_DIR = '/home/pi/picopterx/code/src/server/gen-php';
 	
 	$loader = new ThriftClassLoader();
 	$loader->registerNamespace('Thrift', '/home/pi/lib/thrift-0.9.0/lib/php/lib');

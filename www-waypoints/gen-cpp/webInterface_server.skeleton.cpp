@@ -37,7 +37,7 @@ class webInterfaceHandler : virtual public webInterfaceIf {
     printf("beginUserTrackingThread\n");
   }
 
-  bool beginObjectTrackingThread() {
+  bool beginObjectTrackingThread(const int32_t method) {
     // Your implementation goes here
     printf("beginObjectTrackingThread\n");
   }

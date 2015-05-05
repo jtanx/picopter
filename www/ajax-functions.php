@@ -98,6 +98,27 @@
 				}
 				print "beginObjectTracking " . $b[$ans] . "\n";
 				break;
+
+			case "setCameraMode":
+				if (isset($source["data"])) {
+					$mode = intval($source["data"]);
+					$ans = $client->setCameraMode($mode);
+				}
+				break;
+
+			case "setCameraLearningSize":
+				if (isset($source["data"])) {
+					$decrease = intval($source["data"]) != 0;
+					$client->setCameraLearningSize($decrease);
+				}
+				break;
+
+			case "doCameraLearning":
+				$client->doCameraLearning();
+				break;
+
+			case "requestLearningHue":
+				print $client->requestLearningHue();
 				
 			case "requestNextWaypoint":
 				$ans = $client->requestNextWaypoint();

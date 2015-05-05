@@ -68,6 +68,25 @@ function beginObjectTracking(method) {
   ajaxSendRaw('beginObjectTracking', method);
 }
 
+function setCameraMode() {
+	//yuck
+	var modes = [0,1,2,3,999];
+	if (typeof setCameraMode.currentModeIndex === "undefined") {
+		setCameraMode.currentModeIndex = 0;
+	}
+
+	ajaxSendRaw('setCameraMode', modes[setCameraMode.currentModeIndex]);
+	setCameraMode.currentModeIndex = (setCameraMode.currentModeIndex + 1) % modes.length;
+}
+
+function setCameraLearningSize(decrease) {
+	ajaxSendRaw('setCameraLearningSize', decrease ? 1 : 0);
+}
+
+function doCameraLearning() {
+	ajaxSend('doCameraLearning');
+}
+
 (function worker() {
 	if ( typeof userMarker !== 'undefined' ) {
 		lat = userMarker.getLatLng().lat;

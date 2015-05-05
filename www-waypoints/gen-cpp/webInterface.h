@@ -18,7 +18,7 @@ class webInterfaceIf {
   virtual bool beginWaypointsThread() = 0;
   virtual bool beginLawnmowerThread() = 0;
   virtual bool beginUserTrackingThread() = 0;
-  virtual bool beginObjectTrackingThread() = 0;
+  virtual bool beginObjectTrackingThread(const int32_t method) = 0;
   virtual bool allStop() = 0;
   virtual void requestStatus(std::string& _return) = 0;
   virtual void requestCoords(coordDeg& _return) = 0;
@@ -68,7 +68,7 @@ class webInterfaceNull : virtual public webInterfaceIf {
     bool _return = false;
     return _return;
   }
-  bool beginObjectTrackingThread() {
+  bool beginObjectTrackingThread(const int32_t /* method */) {
     bool _return = false;
     return _return;
   }
@@ -385,18 +385,31 @@ class webInterface_beginUserTrackingThread_presult {
 
 };
 
+typedef struct _webInterface_beginObjectTrackingThread_args__isset {
+  _webInterface_beginObjectTrackingThread_args__isset() : method(false) {}
+  bool method;
+} _webInterface_beginObjectTrackingThread_args__isset;
 
 class webInterface_beginObjectTrackingThread_args {
  public:
 
-  webInterface_beginObjectTrackingThread_args() {
+  webInterface_beginObjectTrackingThread_args() : method(0) {
   }
 
   virtual ~webInterface_beginObjectTrackingThread_args() throw() {}
 
+  int32_t method;
 
-  bool operator == (const webInterface_beginObjectTrackingThread_args & /* rhs */) const
+  _webInterface_beginObjectTrackingThread_args__isset __isset;
+
+  void __set_method(const int32_t val) {
+    method = val;
+  }
+
+  bool operator == (const webInterface_beginObjectTrackingThread_args & rhs) const
   {
+    if (!(method == rhs.method))
+      return false;
     return true;
   }
   bool operator != (const webInterface_beginObjectTrackingThread_args &rhs) const {
@@ -417,6 +430,7 @@ class webInterface_beginObjectTrackingThread_pargs {
 
   virtual ~webInterface_beginObjectTrackingThread_pargs() throw() {}
 
+  const int32_t* method;
 
   uint32_t write(::apache::thrift::protocol::TProtocol* oprot) const;
 
@@ -1288,8 +1302,8 @@ class webInterfaceClient : virtual public webInterfaceIf {
   bool beginUserTrackingThread();
   void send_beginUserTrackingThread();
   bool recv_beginUserTrackingThread();
-  bool beginObjectTrackingThread();
-  void send_beginObjectTrackingThread();
+  bool beginObjectTrackingThread(const int32_t method);
+  void send_beginObjectTrackingThread(const int32_t method);
   bool recv_beginObjectTrackingThread();
   bool allStop();
   void send_allStop();
@@ -1412,13 +1426,13 @@ class webInterfaceMultiface : virtual public webInterfaceIf {
     return ifaces_[i]->beginUserTrackingThread();
   }
 
-  bool beginObjectTrackingThread() {
+  bool beginObjectTrackingThread(const int32_t method) {
     size_t sz = ifaces_.size();
     size_t i = 0;
     for (; i < (sz - 1); ++i) {
-      ifaces_[i]->beginObjectTrackingThread();
+      ifaces_[i]->beginObjectTrackingThread(method);
     }
-    return ifaces_[i]->beginObjectTrackingThread();
+    return ifaces_[i]->beginObjectTrackingThread(method);
   }
 
   bool allStop() {

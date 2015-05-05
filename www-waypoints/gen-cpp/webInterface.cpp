@@ -449,7 +449,20 @@ uint32_t webInterface_beginObjectTrackingThread_args::read(::apache::thrift::pro
     if (ftype == ::apache::thrift::protocol::T_STOP) {
       break;
     }
-    xfer += iprot->skip(ftype);
+    switch (fid)
+    {
+      case -1:
+        if (ftype == ::apache::thrift::protocol::T_I32) {
+          xfer += iprot->readI32(this->method);
+          this->__isset.method = true;
+        } else {
+          xfer += iprot->skip(ftype);
+        }
+        break;
+      default:
+        xfer += iprot->skip(ftype);
+        break;
+    }
     xfer += iprot->readFieldEnd();
   }
 
@@ -462,6 +475,10 @@ uint32_t webInterface_beginObjectTrackingThread_args::write(::apache::thrift::pr
   uint32_t xfer = 0;
   xfer += oprot->writeStructBegin("webInterface_beginObjectTrackingThread_args");
 
+  xfer += oprot->writeFieldBegin("method", ::apache::thrift::protocol::T_I32, -1);
+  xfer += oprot->writeI32(this->method);
+  xfer += oprot->writeFieldEnd();
+
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
   return xfer;
@@ -470,6 +487,10 @@ uint32_t webInterface_beginObjectTrackingThread_args::write(::apache::thrift::pr
 uint32_t webInterface_beginObjectTrackingThread_pargs::write(::apache::thrift::protocol::TProtocol* oprot) const {
   uint32_t xfer = 0;
   xfer += oprot->writeStructBegin("webInterface_beginObjectTrackingThread_pargs");
+
+  xfer += oprot->writeFieldBegin("method", ::apache::thrift::protocol::T_I32, -1);
+  xfer += oprot->writeI32((*(this->method)));
+  xfer += oprot->writeFieldEnd();
 
   xfer += oprot->writeFieldStop();
   xfer += oprot->writeStructEnd();
@@ -1941,18 +1962,19 @@ bool webInterfaceClient::recv_beginUserTrackingThread()
   throw ::apache::thrift::TApplicationException(::apache::thrift::TApplicationException::MISSING_RESULT, "beginUserTrackingThread failed: unknown result");
 }
 
-bool webInterfaceClient::beginObjectTrackingThread()
+bool webInterfaceClient::beginObjectTrackingThread(const int32_t method)
 {
-  send_beginObjectTrackingThread();
+  send_beginObjectTrackingThread(method);
   return recv_beginObjectTrackingThread();
 }
 
-void webInterfaceClient::send_beginObjectTrackingThread()
+void webInterfaceClient::send_beginObjectTrackingThread(const int32_t method)
 {
   int32_t cseqid = 0;
   oprot_->writeMessageBegin("beginObjectTrackingThread", ::apache::thrift::protocol::T_CALL, cseqid);
 
   webInterface_beginObjectTrackingThread_pargs args;
+  args.method = &method;
   args.write(oprot_);
 
   oprot_->writeMessageEnd();
@@ -2660,7 +2682,7 @@ void webInterfaceProcessor::process_beginObjectTrackingThread(int32_t seqid, ::a
 
   webInterface_beginObjectTrackingThread_result result;
   try {
-    result.success = iface_->beginObjectTrackingThread();
+    result.success = iface_->beginObjectTrackingThread(args.method);
     result.__isset.success = true;
   } catch (const std::exception& e) {
     if (this->eventHandler_.get() != NULL) {
